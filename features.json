@@ -115,7 +115,7 @@
         "Handles multi-page documents (up to 50 pages)",
         "Proper error handling for corrupt files"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {

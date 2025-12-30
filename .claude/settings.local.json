@@ -11,7 +11,9 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial project setup - Initializer phase complete\n\nCreated comprehensive project structure for Private Fund Document Review Tool:\n\nFrontend:\n- Vite + React + TypeScript configured\n- Tailwind CSS with SFP design system \\(stone/bronze colors, Inter/Newsreader fonts\\)\n- Complete TypeScript types matching specification schema\n- Package.json with all dependencies \\(framer-motion, lucide-react, react-dropzone, docx\\)\n\nBackend:\n- Express server with CORS and rate limiting\n- Gemini API integration structure\n- Document parsing dependencies \\(pdf-parse, mammoth\\)\n- Environment configuration \\(.env.example\\)\n\nProject Management:\n- features.json with 30 comprehensive features \\(infrastructure, UI, functional, security, testing\\)\n- claude-progress.txt for session tracking\n- project_state.md for state persistence\n- init.sh for environment setup\n- README.md with complete documentation\n\nArchitecture:\n- Frontend → GitHub Pages deployment\n- Backend → Railway deployment\n- LLM: Google Gemini 2.5 Pro\n- Matches SFP-2 tech stack \\(Vite + React + TS\\)\n\nNext: Begin feature implementation starting with feat-001 \\(Vite project configuration verification\\)\n\n🤖 Generated with Claude Code \\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git commit:*)",
       "Bash(npm run build:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(timeout 5 npm run dev:*)",
+      "Bash(pkill:*)"
     ]
   }
 }
