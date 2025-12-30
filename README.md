@@ -12,7 +12,10 @@ AI-powered legal analysis tool for private fund professionals. Upload side lette
 
 **Backend:**
 - Node.js + Express
-- Google Gemini 2.5 Pro API
+- **Google Gemini 3 Flash** (Dec 2025 release)
+  - Gemini 3 Pro-level reasoning at Flash speed
+  - Cost: ~$0.20-0.50 per analysis
+  - Pricing: $0.50 per 1M input / $3.00 per 1M output tokens
 - Deployed to Railway
 
 ## Project Structure
