@@ -53,7 +53,7 @@
         "Environment variable for GEMINI_API_KEY",
         "CORS configured for local dev and production frontend"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {

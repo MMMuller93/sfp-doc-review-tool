@@ -39,20 +39,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// TODO: Import and use route handlers
-// import classifyRouter from './routes/classify.js';
-// import analyzeRouter from './routes/analyze.js';
-// app.use('/api/classify', classifyRouter);
-// app.use('/api/analyze', analyzeRouter);
+// API routes
+import classifyRouter from './routes/classify.js';
+import analyzeRouter from './routes/analyze.js';
 
-// Placeholder routes
-app.post('/api/classify', async (req, res) => {
-  res.status(501).json({ error: 'Classification endpoint not yet implemented' });
-});
-
-app.post('/api/analyze', async (req, res) => {
-  res.status(501).json({ error: 'Analysis endpoint not yet implemented' });
-});
+app.use('/api/classify', classifyRouter);
+app.use('/api/analyze', analyzeRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
