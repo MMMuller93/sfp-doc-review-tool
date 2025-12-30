@@ -85,7 +85,7 @@
         "Upload progress indicator",
         "Clear visual feedback on file selection"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {
