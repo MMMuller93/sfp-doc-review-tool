@@ -11,7 +11,7 @@
         "Project builds with `npm run build`",
         "Dev server runs with `npm run dev`"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {
@@ -25,7 +25,7 @@
         "ClauseReference, RedlineChange, SuggestedFix, Issue, RegulatoryFlag interfaces",
         "Types exported from types.ts"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {
@@ -39,7 +39,7 @@
         "60px grid background pattern utility",
         "Matches SFP styling from spec"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {
