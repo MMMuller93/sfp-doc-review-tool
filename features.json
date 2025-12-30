@@ -1,0 +1,435 @@
+{
+  "features": [
+    {
+      "id": "feat-001",
+      "category": "infrastructure",
+      "description": "Vite + React + TypeScript project initialized with proper config",
+      "acceptanceCriteria": [
+        "package.json with all required dependencies",
+        "vite.config.ts configured",
+        "tsconfig.json configured",
+        "Project builds with `npm run build`",
+        "Dev server runs with `npm run dev`"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-002",
+      "category": "infrastructure",
+      "description": "TypeScript types match complete specification schema",
+      "acceptanceCriteria": [
+        "All enums defined (UserRole, Confidence, RiskLevel, Verdict, IssueTopic)",
+        "PreflightResult interface",
+        "AnalysisResult interface with all nested types",
+        "ClauseReference, RedlineChange, SuggestedFix, Issue, RegulatoryFlag interfaces",
+        "Types exported from types.ts"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-003",
+      "category": "infrastructure",
+      "description": "Tailwind CSS configured with SFP design tokens",
+      "acceptanceCriteria": [
+        "Tailwind installed and configured",
+        "Custom colors: stone-950, stone-925, bronze-500, bronze-400, bronze-200",
+        "Custom fonts: Inter (sans), Newsreader (serif)",
+        "60px grid background pattern utility",
+        "Matches SFP styling from spec"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-004",
+      "category": "infrastructure",
+      "description": "Railway backend project initialized with Gemini integration",
+      "acceptanceCriteria": [
+        "Railway project structure created in /backend",
+        "Express server or serverless function setup",
+        "Gemini SDK installed and configured",
+        "Environment variable for GEMINI_API_KEY",
+        "CORS configured for local dev and production frontend"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-005",
+      "category": "ui",
+      "description": "Landing page layout matches SFP design system",
+      "acceptanceCriteria": [
+        "Hero section with H1, subhead, CTAs",
+        "How It Works section (4 steps)",
+        "What You'll Get section (4 benefits)",
+        "Supported Documents section",
+        "Trust & Security section",
+        "FAQ section with expand/collapse",
+        "Disclaimer footer",
+        "Matches SFP color scheme and typography"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-006",
+      "category": "ui",
+      "description": "Document upload UI with role selection",
+      "acceptanceCriteria": [
+        "File upload dropzone for target document (PDF, DOCX, TXT)",
+        "Optional file upload for reference document",
+        "Radio buttons for GP/LP role selection",
+        "File validation (type, size limit)",
+        "Upload progress indicator",
+        "Clear visual feedback on file selection"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-007",
+      "category": "ui",
+      "description": "Mobile-responsive layout",
+      "acceptanceCriteria": [
+        "All sections work on mobile (320px+)",
+        "File upload works on mobile",
+        "Results dashboard readable on mobile",
+        "Touch-friendly buttons and interactions",
+        "No horizontal scroll on any screen size"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-008",
+      "category": "functional",
+      "description": "Document parsing (PDF, DOCX, TXT) in backend",
+      "acceptanceCriteria": [
+        "Backend endpoint accepts file uploads",
+        "PDF text extraction working (pdf-parse or similar)",
+        "DOCX text extraction working (mammoth or similar)",
+        "TXT file reading working",
+        "Returns extracted text to analysis flow",
+        "Handles multi-page documents (up to 50 pages)",
+        "Proper error handling for corrupt files"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-009",
+      "category": "functional",
+      "description": "Preflight classification endpoint (2-3 second inference)",
+      "acceptanceCriteria": [
+        "Backend endpoint: POST /api/classify",
+        "Accepts document text (first 2-3 pages)",
+        "Calls Gemini with preflight system prompt",
+        "Returns PreflightResult JSON",
+        "Response time < 5 seconds",
+        "Structured output mode enabled"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-010",
+      "category": "functional",
+      "description": "Main analysis endpoint with full system prompt",
+      "acceptanceCriteria": [
+        "Backend endpoint: POST /api/analyze",
+        "Accepts: target doc text, optional reference doc text, user role",
+        "Sends complete system prompt from spec",
+        "Calls Gemini 2.5 Pro with structured output",
+        "Returns AnalysisResult JSON",
+        "Response time < 45 seconds for typical docs",
+        "Proper error handling and timeouts"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-011",
+      "category": "security",
+      "description": "API key security - no keys in browser",
+      "acceptanceCriteria": [
+        "GEMINI_API_KEY stored in backend environment only",
+        "No API keys in frontend code or network requests",
+        "Backend validates requests",
+        "Rate limiting configured",
+        "CORS properly configured"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-012",
+      "category": "security",
+      "description": "Prompt injection defense in system prompt",
+      "acceptanceCriteria": [
+        "System prompt includes SECURITY RULES section from spec",
+        "Instructions to treat document content as untrusted",
+        "Test with adversarial document containing 'ignore previous instructions'",
+        "AI does not follow embedded instructions",
+        "AI flags suspicious instruction-like text"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-013",
+      "category": "security",
+      "description": "No document storage - process and discard",
+      "acceptanceCriteria": [
+        "Documents processed in memory only",
+        "No files written to disk (or temp files deleted immediately)",
+        "No database storage of document content",
+        "Session cleanup on browser close",
+        "Verified via code review and testing"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-014",
+      "category": "quality",
+      "description": "Evidence-based output - all issues cite document text",
+      "acceptanceCriteria": [
+        "Every Issue includes targetRef with verbatim quote",
+        "Quotes are exact text (max 250 chars)",
+        "System prompt enforces 'Not found' if no supporting text",
+        "Test with real side letter - all quotes verifiable",
+        "No fabricated section numbers or quotes"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-015",
+      "category": "quality",
+      "description": "Structured output validation (not markdown parsing)",
+      "acceptanceCriteria": [
+        "Gemini configured for JSON schema mode",
+        "Response validated against TypeScript types",
+        "Fallback error handling if JSON invalid",
+        "No markdown parsing attempted",
+        "Test with multiple documents - all return valid JSON"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-016",
+      "category": "ui",
+      "description": "Results dashboard - verdict and key action",
+      "acceptanceCriteria": [
+        "Verdict displayed prominently (safe-to-sign, negotiate, high-risk, do-not-sign)",
+        "Color-coded by risk level",
+        "Verdict rationale visible",
+        "Key action displayed as primary next step",
+        "protectingRole indicator (showing GP or LP perspective)"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-017",
+      "category": "ui",
+      "description": "Results dashboard - critical issues section",
+      "acceptanceCriteria": [
+        "Critical issues (blockers) shown in separate section",
+        "Max 3 critical issues displayed",
+        "Each issue shows: title, risk level, topic, summary",
+        "Click to expand for full details",
+        "Empty state if no critical issues"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-018",
+      "category": "ui",
+      "description": "Results dashboard - all issues list",
+      "acceptanceCriteria": [
+        "All non-critical issues displayed below critical",
+        "Sorted by risk level (negotiate > standard)",
+        "Each issue expandable to show full details",
+        "Issue details include: targetRef quote, referenceRef if applicable, impactAnalysis, marketContext",
+        "Topic tags visible",
+        "Max 10 issues total"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-019",
+      "category": "ui",
+      "description": "Results dashboard - suggested fixes display",
+      "acceptanceCriteria": [
+        "Each issue shows fixes (soft and hard approaches)",
+        "Redline changes displayed: original vs proposed",
+        "Market justification visible",
+        "Copy-to-clipboard button for redline text",
+        "Visual distinction between soft and hard fixes"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-020",
+      "category": "ui",
+      "description": "Results dashboard - regulatory flags",
+      "acceptanceCriteria": [
+        "Regulatory flags section displayed",
+        "Each flag shows category (ERISA, UBTI, FOIA, etc.)",
+        "Status indicator (clear, flag, needs-review)",
+        "Summary text visible",
+        "Empty state if no flags"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-021",
+      "category": "ui",
+      "description": "Results dashboard - assumptions and metadata",
+      "acceptanceCriteria": [
+        "Assumptions list displayed in collapsible section",
+        "Metadata shown: timestamp, document names, model used",
+        "Disclaimer text included",
+        "Clear visual hierarchy"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-022",
+      "category": "functional",
+      "description": "Export to Word - change list with redlines",
+      "acceptanceCriteria": [
+        "Export button generates Word document",
+        "Document includes: verdict, critical issues, all issues with redlines",
+        "Redlines formatted with original and proposed text",
+        "Market justifications included",
+        "Clean, professional formatting",
+        "Download triggers immediately",
+        "Uses docx library or similar"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-023",
+      "category": "functional",
+      "description": "Optional JSON export",
+      "acceptanceCriteria": [
+        "Export JSON button available",
+        "Downloads raw AnalysisResult as formatted JSON",
+        "Filename includes timestamp and document name"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-024",
+      "category": "functional",
+      "description": "Loading states and progress indicators",
+      "acceptanceCriteria": [
+        "Upload shows progress",
+        "Analysis shows loading spinner with status text",
+        "Estimated time remaining (if possible)",
+        "Can't submit while analysis in progress",
+        "Error states handled gracefully"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-025",
+      "category": "integration",
+      "description": "SEO and meta tags",
+      "acceptanceCriteria": [
+        "Title tag matches spec",
+        "Meta description from spec",
+        "Meta keywords included",
+        "Open Graph tags for social sharing",
+        "Favicon"
+      ],
+      "passes": false,
+      "priority": 3
+    },
+    {
+      "id": "feat-026",
+      "category": "infrastructure",
+      "description": "GitHub Pages deployment workflow",
+      "acceptanceCriteria": [
+        ".github/workflows/deploy.yml created",
+        "Builds on push to main",
+        "Deploys to GitHub Pages",
+        "CNAME file if custom domain",
+        "Successful deployment test"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-027",
+      "category": "infrastructure",
+      "description": "Railway backend deployment",
+      "acceptanceCriteria": [
+        "Railway project configured",
+        "Environment variables set (GEMINI_API_KEY)",
+        "Backend endpoints accessible from deployed frontend",
+        "CORS configured for production domain",
+        "Deployment documented in README"
+      ],
+      "passes": false,
+      "priority": 2
+    },
+    {
+      "id": "feat-028",
+      "category": "testing",
+      "description": "End-to-end test with real side letter document",
+      "acceptanceCriteria": [
+        "Upload real side letter PDF",
+        "Analysis completes successfully",
+        "All issues include valid document quotes",
+        "Verdict makes sense for document",
+        "Export to Word works",
+        "Response time < 45 seconds"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-029",
+      "category": "testing",
+      "description": "Prompt injection attack test",
+      "acceptanceCriteria": [
+        "Create test document with 'ignore previous instructions' embedded",
+        "Upload and analyze",
+        "AI does not follow embedded instructions",
+        "Output remains structured and on-task",
+        "Suspicious text flagged if detected"
+      ],
+      "passes": false,
+      "priority": 1
+    },
+    {
+      "id": "feat-030",
+      "category": "testing",
+      "description": "GP vs LP analysis produces different outputs",
+      "acceptanceCriteria": [
+        "Upload same document twice",
+        "Select GP role first, then LP role",
+        "Outputs have different framing and priorities",
+        "GP output protects fund manager interests",
+        "LP output protects investor interests",
+        "Document both outputs for comparison"
+      ],
+      "passes": false,
+      "priority": 1
+    }
+  ]
+}
