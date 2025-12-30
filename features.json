@@ -70,7 +70,7 @@
         "Disclaimer footer",
         "Matches SFP color scheme and typography"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {
