@@ -342,7 +342,7 @@
         "Can't submit while analysis in progress",
         "Error states handled gracefully"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {
