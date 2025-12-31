@@ -316,7 +316,7 @@
         "Download triggers immediately",
         "Uses docx library or similar"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { CheckCircle, AlertTriangle, AlertOctagon, XCircle, ChevronDown, Copy, Check, Shield, Info, Calendar, FileText, Cpu } from 'lucide-react';
+import { CheckCircle, AlertTriangle, AlertOctagon, XCircle, ChevronDown, Copy, Check, Shield, Info, Calendar, FileText, Cpu, Download } from 'lucide-react';
 import type { AnalysisResult, Issue, SuggestedFix, RegulatoryFlag } from '../types';
+import { exportToWord } from '../utils/wordExport';
 
 interface ResultsDashboardProps {
   result: AnalysisResult;
@@ -278,13 +279,35 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
 
   const verdictConfig = getVerdictConfig(result.verdict);
   const VerdictIcon = verdictConfig.icon;
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportToWord = async () => {
+    setIsExporting(true);
+    try {
+      await exportToWord(result);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export document. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <section id="results-section" className="py-20 px-6 bg-stone-950 border-t border-stone-900">
       <div className="max-w-5xl mx-auto">
-        <h2 className="text-4xl font-serif font-bold text-bronze-50 text-center mb-12">
-          Analysis Results
-        </h2>
+        {/* Header with Title and Export Button */}
+        <div className="flex items-center justify-between mb-12">
+          <h2 className="text-4xl font-serif font-bold text-bronze-50">Analysis Results</h2>
+          <button
+            onClick={handleExportToWord}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-6 py-3 bg-bronze-500 hover:bg-bronze-400 disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-semibold rounded-lg transition-colors"
+          >
+            <Download className="w-5 h-5" />
+            {isExporting ? 'Exporting...' : 'Export to Word'}
+          </button>
+        </div>
 
         {/* Verdict Card */}
         <div
