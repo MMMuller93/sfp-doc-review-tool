@@ -99,7 +99,7 @@
         "Touch-friendly buttons and interactions",
         "No horizontal scroll on any screen size"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 3
     },
     {
@@ -370,7 +370,7 @@
         "CNAME file if custom domain",
         "Successful deployment test"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {
@@ -384,7 +384,7 @@
         "CORS configured for production domain",
         "Deployment documented in README"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {
@@ -399,7 +399,7 @@
         "Export to Word works",
         "Response time < 45 seconds"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {
@@ -413,7 +413,7 @@
         "Output remains structured and on-task",
         "Suspicious text flagged if detected"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     },
     {
@@ -428,7 +428,7 @@
         "LP output protects investor interests",
         "Document both outputs for comparison"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 1
     }
   ]
