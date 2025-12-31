@@ -98,23 +98,20 @@ npm run build
 
 ## Deployment
 
-### Frontend (GitHub Pages)
+**📖 See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions.**
 
-The frontend is deployed automatically via GitHub Actions when pushing to `main`.
+### Quick Start
 
-1. Push to main branch
-2. GitHub Actions builds the frontend
-3. Deploys to GitHub Pages
+**Frontend (GitHub Pages):**
 
-### Backend (Railway)
+- Automatically deploys on push to `main` via GitHub Actions
+- Configured for custom domain: `tools.strategicfundpartners.com`
 
-1. Create a Railway project
-2. Connect to this repository
-3. Set root directory to `backend/`
-4. Add environment variables:
-   - `GEMINI_API_KEY`
-   - `FRONTEND_URL_PROD` (your GitHub Pages URL)
-5. Deploy
+**Backend (Railway):**
+
+- Deploy from GitHub repository
+- Set environment variable: `GEMINI_API_KEY`
+- Automatic HTTPS with custom domain support
 
 ## Features & Progress
 
