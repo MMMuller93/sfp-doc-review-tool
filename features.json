@@ -230,7 +230,7 @@
         "Key action displayed as primary next step",
         "protectingRole indicator (showing GP or LP perspective)"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {

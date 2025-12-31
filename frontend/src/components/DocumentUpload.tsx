@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, X, Loader2 } from 'lucide-react';
-import type { UserRole } from '../types';
+import type { UserRole, AnalysisResult } from '../types';
 
 interface UploadedFile {
   file: File;
@@ -10,7 +10,11 @@ interface UploadedFile {
   type: string;
 }
 
-export default function DocumentUpload() {
+interface DocumentUploadProps {
+  onAnalysisComplete: (result: AnalysisResult) => void;
+}
+
+export default function DocumentUpload({ onAnalysisComplete }: DocumentUploadProps) {
   const [targetDocument, setTargetDocument] = useState<UploadedFile | null>(null);
   const [referenceDocument, setReferenceDocument] = useState<UploadedFile | null>(null);
   const [userRole, setUserRole] = useState<UserRole | ''>('');
@@ -121,8 +125,8 @@ export default function DocumentUpload() {
       const result = await response.json();
       console.log('Analysis result:', result);
 
-      // TODO: Display results (feat-016 onwards)
-      alert('Analysis complete! Check console for results. (Result display UI coming in feat-016)');
+      // Pass analysis result to parent for display
+      onAnalysisComplete(result.analysis);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Analysis failed');
     } finally {
