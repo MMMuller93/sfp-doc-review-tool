@@ -356,7 +356,7 @@
         "Open Graph tags for social sharing",
         "Favicon"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 3
     },
     {

@@ -14,7 +14,8 @@
       "Bash(npm uninstall:*)",
       "Bash(timeout 5 npm run dev:*)",
       "Bash(pkill:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(Strategic Fund Partners\"\n- Meta description with keyword-rich content\n- Meta keywords for fund document review, GP/LP, due diligence\n- Open Graph tags for Facebook sharing\n- Twitter card meta tags for social sharing\n- Additional SEO tags \\(robots, language, revisit-after\\)\n- Favicon already present \\(vite.svg\\)\n\n24/30 features passing\n\n🤖 Generated with Claude Code \\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
