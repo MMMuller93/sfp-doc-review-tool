@@ -17,3 +17,4 @@ backend/.env
 # IDEs
 .vscode/
 .idea/
+.claude/
