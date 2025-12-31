@@ -112,7 +112,7 @@ export default function DocumentUpload({ onAnalysisComplete }: DocumentUploadPro
         formData.append('userRole', userRole);
       }
 
-      const response = await fetch('http://localhost:3001/api/upload/analyze', {
+      const response = await fetch('https://railway-up-production-7cf4.up.railway.app/api/upload/analyze', {
         method: 'POST',
         body: formData,
       });
