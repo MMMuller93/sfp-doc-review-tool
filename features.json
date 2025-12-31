@@ -259,7 +259,7 @@
         "Topic tags visible",
         "Max 10 issues total"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {

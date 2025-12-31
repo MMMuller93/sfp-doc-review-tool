@@ -6,8 +6,8 @@ interface ResultsDashboardProps {
   result: AnalysisResult;
 }
 
-// Helper component for individual critical issue cards
-function CriticalIssueCard({ issue }: { issue: Issue }) {
+// Helper component for individual issue cards (used for both critical and non-critical issues)
+function IssueCard({ issue }: { issue: Issue }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getRiskConfig = (risk: Issue['risk']) => {
@@ -194,7 +194,7 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
             </h3>
             <div className="space-y-4">
               {result.criticalIssues.slice(0, 3).map((issue) => (
-                <CriticalIssueCard key={issue.id} issue={issue} />
+                <IssueCard key={issue.id} issue={issue} />
               ))}
             </div>
           </div>
@@ -208,10 +208,36 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
           </div>
         )}
 
+        {/* All Issues Section */}
+        {result.issues.length > 0 && (
+          <div className="mb-12">
+            <h3 className="text-2xl font-serif font-bold text-bronze-50 mb-6">
+              All Issues ({result.issues.length})
+            </h3>
+            <div className="space-y-4">
+              {result.issues
+                .sort((a, b) => {
+                  // Sort by risk level: negotiate > standard
+                  const riskOrder = { negotiate: 1, standard: 2, blocker: 0 };
+                  return riskOrder[a.risk] - riskOrder[b.risk];
+                })
+                .slice(0, 10)
+                .map((issue) => (
+                  <IssueCard key={issue.id} issue={issue} />
+                ))}
+            </div>
+            {result.issues.length > 10 && (
+              <p className="text-center text-bronze-200/60 text-sm mt-4">
+                Showing top 10 of {result.issues.length} issues
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Placeholder for additional sections */}
         <div className="text-center text-bronze-200/60">
           <p className="text-sm">
-            Additional sections (all issues, regulatory flags) coming in feat-018 through feat-020
+            Additional sections (regulatory flags) coming in feat-020
           </p>
         </div>
       </div>
