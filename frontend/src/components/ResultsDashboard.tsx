@@ -1,9 +1,65 @@
 import { useState } from 'react';
-import { CheckCircle, AlertTriangle, AlertOctagon, XCircle, ChevronDown, Copy, Check } from 'lucide-react';
-import type { AnalysisResult, Issue, SuggestedFix } from '../types';
+import { CheckCircle, AlertTriangle, AlertOctagon, XCircle, ChevronDown, Copy, Check, Shield } from 'lucide-react';
+import type { AnalysisResult, Issue, SuggestedFix, RegulatoryFlag } from '../types';
 
 interface ResultsDashboardProps {
   result: AnalysisResult;
+}
+
+// Helper component for displaying regulatory flags
+function RegulatoryFlagCard({ flag }: { flag: RegulatoryFlag }) {
+  const getStatusConfig = (status: RegulatoryFlag['status']) => {
+    switch (status) {
+      case 'clear':
+        return {
+          icon: CheckCircle,
+          color: 'text-green-500',
+          bgColor: 'bg-green-500/10',
+          borderColor: 'border-green-500/50',
+          label: 'Clear',
+        };
+      case 'flag':
+        return {
+          icon: AlertTriangle,
+          color: 'text-yellow-500',
+          bgColor: 'bg-yellow-500/10',
+          borderColor: 'border-yellow-500/50',
+          label: 'Flagged',
+        };
+      case 'needs-review':
+        return {
+          icon: AlertOctagon,
+          color: 'text-orange-500',
+          bgColor: 'bg-orange-500/10',
+          borderColor: 'border-orange-500/50',
+          label: 'Needs Review',
+        };
+    }
+  };
+
+  const statusConfig = getStatusConfig(flag.status);
+  const StatusIcon = statusConfig.icon;
+
+  const formatCategory = (category: string) => {
+    return category.toUpperCase().replace(/-/g, ' / ');
+  };
+
+  return (
+    <div className={`rounded-lg border ${statusConfig.bgColor} ${statusConfig.borderColor} p-4`}>
+      <div className="flex items-start gap-4">
+        <StatusIcon className={`w-6 h-6 ${statusConfig.color} flex-shrink-0 mt-0.5`} strokeWidth={1.5} />
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <h4 className="text-lg font-semibold text-bronze-50">{formatCategory(flag.category)}</h4>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusConfig.bgColor} ${statusConfig.color}`}>
+              {statusConfig.label}
+            </span>
+          </div>
+          <p className="text-bronze-200/80 text-sm leading-relaxed">{flag.summary}</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // Helper component for displaying suggested fixes with redlines
@@ -308,12 +364,30 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
           </div>
         )}
 
-        {/* Placeholder for additional sections */}
-        <div className="text-center text-bronze-200/60">
-          <p className="text-sm">
-            Additional sections (regulatory flags) coming in feat-020
-          </p>
-        </div>
+        {/* Regulatory Flags Section */}
+        {result.regulatoryFlags.length > 0 ? (
+          <div className="mb-12">
+            <div className="flex items-center gap-3 mb-6">
+              <Shield className="w-6 h-6 text-bronze-500" strokeWidth={1.5} />
+              <h3 className="text-2xl font-serif font-bold text-bronze-50">
+                Regulatory Flags ({result.regulatoryFlags.length})
+              </h3>
+            </div>
+            <div className="space-y-3">
+              {result.regulatoryFlags.map((flag, index) => (
+                <RegulatoryFlagCard key={index} flag={flag} />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="mb-12 p-6 bg-stone-925 border border-stone-800 rounded-lg text-center">
+            <Shield className="w-10 h-10 text-bronze-500/60 mx-auto mb-3" strokeWidth={1.5} />
+            <h3 className="text-lg font-semibold text-bronze-200 mb-2">No Regulatory Flags</h3>
+            <p className="text-bronze-200/60 text-sm">
+              No specific regulatory concerns were identified in this document.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

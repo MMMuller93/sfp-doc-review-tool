@@ -287,7 +287,7 @@
         "Summary text visible",
         "Empty state if no flags"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 3
     },
     {
