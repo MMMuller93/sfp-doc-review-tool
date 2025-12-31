@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, AlertTriangle, AlertOctagon, XCircle, ChevronDown, Copy, Check, Shield, Info, Calendar, FileText, Cpu, Download } from 'lucide-react';
+import { CheckCircle, AlertTriangle, AlertOctagon, XCircle, ChevronDown, Copy, Check, Shield, Info, Calendar, FileText, Cpu, Download, Code } from 'lucide-react';
 import type { AnalysisResult, Issue, SuggestedFix, RegulatoryFlag } from '../types';
 import { exportToWord } from '../utils/wordExport';
 
@@ -293,20 +293,44 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
     }
   };
 
+  const handleExportToJSON = () => {
+    const jsonString = JSON.stringify(result, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    link.href = url;
+    link.download = `analysis-${result.metadata.targetDocumentName.replace(/\.[^/.]+$/, '')}-${timestamp}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <section id="results-section" className="py-20 px-6 bg-stone-950 border-t border-stone-900">
       <div className="max-w-5xl mx-auto">
-        {/* Header with Title and Export Button */}
+        {/* Header with Title and Export Buttons */}
         <div className="flex items-center justify-between mb-12">
           <h2 className="text-4xl font-serif font-bold text-bronze-50">Analysis Results</h2>
-          <button
-            onClick={handleExportToWord}
-            disabled={isExporting}
-            className="flex items-center gap-2 px-6 py-3 bg-bronze-500 hover:bg-bronze-400 disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-semibold rounded-lg transition-colors"
-          >
-            <Download className="w-5 h-5" />
-            {isExporting ? 'Exporting...' : 'Export to Word'}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportToJSON}
+              className="flex items-center gap-2 px-4 py-2.5 bg-stone-900 hover:bg-stone-800 border border-stone-700 text-bronze-200 rounded-lg transition-colors"
+              title="Export raw JSON data"
+            >
+              <Code className="w-4 h-4" />
+              JSON
+            </button>
+            <button
+              onClick={handleExportToWord}
+              disabled={isExporting}
+              className="flex items-center gap-2 px-6 py-3 bg-bronze-500 hover:bg-bronze-400 disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-semibold rounded-lg transition-colors"
+            >
+              <Download className="w-5 h-5" />
+              {isExporting ? 'Exporting...' : 'Export to Word'}
+            </button>
+          </div>
         </div>
 
         {/* Verdict Card */}

@@ -328,7 +328,7 @@
         "Downloads raw AnalysisResult as formatted JSON",
         "Filename includes timestamp and document name"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 3
     },
     {
