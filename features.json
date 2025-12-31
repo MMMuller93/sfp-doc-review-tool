@@ -244,7 +244,7 @@
         "Click to expand for full details",
         "Empty state if no critical issues"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {

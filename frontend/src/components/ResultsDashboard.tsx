@@ -1,8 +1,107 @@
-import { CheckCircle, AlertTriangle, AlertOctagon, XCircle } from 'lucide-react';
-import type { AnalysisResult } from '../types';
+import { useState } from 'react';
+import { CheckCircle, AlertTriangle, AlertOctagon, XCircle, ChevronDown } from 'lucide-react';
+import type { AnalysisResult, Issue } from '../types';
 
 interface ResultsDashboardProps {
   result: AnalysisResult;
+}
+
+// Helper component for individual critical issue cards
+function CriticalIssueCard({ issue }: { issue: Issue }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const getRiskConfig = (risk: Issue['risk']) => {
+    switch (risk) {
+      case 'blocker':
+        return { color: 'text-red-500', bgColor: 'bg-red-500/10', borderColor: 'border-red-500/50' };
+      case 'negotiate':
+        return { color: 'text-yellow-500', bgColor: 'bg-yellow-500/10', borderColor: 'border-yellow-500/50' };
+      case 'standard':
+        return { color: 'text-blue-500', bgColor: 'bg-blue-500/10', borderColor: 'border-blue-500/50' };
+    }
+  };
+
+  const riskConfig = getRiskConfig(issue.risk);
+
+  const formatTopic = (topic: string) => {
+    return topic
+      .split('-')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  return (
+    <div className={`rounded-lg border-2 ${riskConfig.bgColor} ${riskConfig.borderColor} overflow-hidden`}>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-6 py-4 text-left flex items-center justify-between gap-4 group hover:bg-white/5 transition-colors"
+      >
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase ${riskConfig.bgColor} ${riskConfig.color}`}>
+              {issue.risk}
+            </span>
+            <span className="px-3 py-1 bg-stone-900/50 rounded-full text-xs text-bronze-200">
+              {formatTopic(issue.topic)}
+            </span>
+          </div>
+          <h4 className="text-xl font-semibold text-bronze-50 mb-2">{issue.title}</h4>
+          <p className="text-bronze-200/80 leading-relaxed">{issue.summary}</p>
+        </div>
+        <ChevronDown
+          className={`w-6 h-6 text-bronze-500 flex-shrink-0 transition-transform ${
+            isExpanded ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      {isExpanded && (
+        <div className="px-6 pb-6 space-y-4 border-t border-stone-800/50">
+          {/* Impact Analysis */}
+          <div className="pt-4">
+            <h5 className="text-sm font-semibold text-bronze-400 mb-2">Impact Analysis</h5>
+            <p className="text-bronze-200/80 leading-relaxed">{issue.impactAnalysis}</p>
+          </div>
+
+          {/* Target Reference */}
+          <div>
+            <h5 className="text-sm font-semibold text-bronze-400 mb-2">Document Reference</h5>
+            <div className="bg-stone-950/50 border border-stone-800 rounded-lg p-4">
+              <p className="text-xs text-bronze-400 mb-1">{issue.targetRef.locator}</p>
+              <p className="text-bronze-200/80 text-sm italic leading-relaxed">"{issue.targetRef.quote}"</p>
+            </div>
+          </div>
+
+          {/* Reference Document (if available) */}
+          {issue.referenceRef && (
+            <div>
+              <h5 className="text-sm font-semibold text-bronze-400 mb-2">Reference Document</h5>
+              <div className="bg-stone-950/50 border border-stone-800 rounded-lg p-4">
+                <p className="text-xs text-bronze-400 mb-1">{issue.referenceRef.locator}</p>
+                <p className="text-bronze-200/80 text-sm italic leading-relaxed">"{issue.referenceRef.quote}"</p>
+              </div>
+            </div>
+          )}
+
+          {/* Market Context */}
+          {issue.marketContext && (
+            <div>
+              <h5 className="text-sm font-semibold text-bronze-400 mb-2">Market Context</h5>
+              <p className="text-bronze-200/80 text-sm leading-relaxed">{issue.marketContext}</p>
+            </div>
+          )}
+
+          {/* Suggested Fixes (placeholder for feat-019) */}
+          <div>
+            <h5 className="text-sm font-semibold text-bronze-400 mb-2">Suggested Fixes</h5>
+            <p className="text-bronze-200/60 text-sm">
+              {issue.fixes.length} fix{issue.fixes.length !== 1 ? 'es' : ''} available (detailed view in feat-019)
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ResultsDashboard({ result }: ResultsDashboardProps) {
@@ -87,10 +186,32 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
           </p>
         </div>
 
+        {/* Critical Issues Section */}
+        {result.criticalIssues.length > 0 ? (
+          <div className="mb-12">
+            <h3 className="text-2xl font-serif font-bold text-bronze-50 mb-6">
+              Critical Issues ({result.criticalIssues.length})
+            </h3>
+            <div className="space-y-4">
+              {result.criticalIssues.slice(0, 3).map((issue) => (
+                <CriticalIssueCard key={issue.id} issue={issue} />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="mb-12 p-8 bg-green-500/10 border-2 border-green-500/50 rounded-lg text-center">
+            <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" strokeWidth={1.5} />
+            <h3 className="text-xl font-semibold text-green-400 mb-2">No Critical Issues Found</h3>
+            <p className="text-bronze-200/80">
+              This document does not contain any blocking issues that would require immediate attention.
+            </p>
+          </div>
+        )}
+
         {/* Placeholder for additional sections */}
         <div className="text-center text-bronze-200/60">
           <p className="text-sm">
-            Additional sections (critical issues, all issues, regulatory flags) coming in feat-017 through feat-020
+            Additional sections (all issues, regulatory flags) coming in feat-018 through feat-020
           </p>
         </div>
       </div>
