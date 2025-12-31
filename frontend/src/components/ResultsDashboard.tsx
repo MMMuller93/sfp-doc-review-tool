@@ -1,9 +1,79 @@
 import { useState } from 'react';
-import { CheckCircle, AlertTriangle, AlertOctagon, XCircle, ChevronDown } from 'lucide-react';
-import type { AnalysisResult, Issue } from '../types';
+import { CheckCircle, AlertTriangle, AlertOctagon, XCircle, ChevronDown, Copy, Check } from 'lucide-react';
+import type { AnalysisResult, Issue, SuggestedFix } from '../types';
 
 interface ResultsDashboardProps {
   result: AnalysisResult;
+}
+
+// Helper component for displaying suggested fixes with redlines
+function SuggestedFixCard({ fix }: { fix: SuggestedFix }) {
+  const [copiedRedline, setCopiedRedline] = useState(false);
+
+  const handleCopyRedline = () => {
+    const redlineText = `Original: ${fix.redline.original}\n\nProposed: ${fix.redline.proposed}`;
+    navigator.clipboard.writeText(redlineText);
+    setCopiedRedline(true);
+    setTimeout(() => setCopiedRedline(false), 2000);
+  };
+
+  const approachConfig =
+    fix.approach === 'soft'
+      ? { label: 'Soft Approach', color: 'text-blue-400', bgColor: 'bg-blue-500/10' }
+      : { label: 'Hard Approach', color: 'text-orange-400', bgColor: 'bg-orange-500/10' };
+
+  return (
+    <div className="bg-stone-925 border border-stone-800 rounded-lg p-4">
+      <div className="flex items-start justify-between gap-4 mb-3">
+        <div className="flex items-center gap-2">
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${approachConfig.bgColor} ${approachConfig.color}`}>
+            {approachConfig.label}
+          </span>
+        </div>
+        <button
+          onClick={handleCopyRedline}
+          className="flex items-center gap-2 px-3 py-1.5 bg-bronze-500/10 hover:bg-bronze-500/20 border border-bronze-500/50 rounded text-sm text-bronze-400 transition-colors"
+          title="Copy redline to clipboard"
+        >
+          {copiedRedline ? (
+            <>
+              <Check className="w-4 h-4" />
+              Copied
+            </>
+          ) : (
+            <>
+              <Copy className="w-4 h-4" />
+              Copy Redline
+            </>
+          )}
+        </button>
+      </div>
+
+      <p className="text-bronze-200/90 mb-4">{fix.description}</p>
+
+      {/* Redline Display */}
+      <div className="space-y-3">
+        <div>
+          <p className="text-xs font-semibold text-red-400 mb-1">Original (Remove):</p>
+          <div className="bg-red-500/10 border border-red-500/30 rounded p-3">
+            <p className="text-bronze-200/80 text-sm line-through">{fix.redline.original}</p>
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-green-400 mb-1">Proposed (Insert):</p>
+          <div className="bg-green-500/10 border border-green-500/30 rounded p-3">
+            <p className="text-bronze-200/80 text-sm">{fix.redline.proposed}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Market Justification */}
+      <div className="mt-4 pt-4 border-t border-stone-800">
+        <p className="text-xs font-semibold text-bronze-400 mb-1">Market Justification:</p>
+        <p className="text-bronze-200/70 text-sm leading-relaxed">{fix.redline.marketJustification}</p>
+      </div>
+    </div>
+  );
 }
 
 // Helper component for individual issue cards (used for both critical and non-critical issues)
@@ -91,12 +161,16 @@ function IssueCard({ issue }: { issue: Issue }) {
             </div>
           )}
 
-          {/* Suggested Fixes (placeholder for feat-019) */}
+          {/* Suggested Fixes */}
           <div>
-            <h5 className="text-sm font-semibold text-bronze-400 mb-2">Suggested Fixes</h5>
-            <p className="text-bronze-200/60 text-sm">
-              {issue.fixes.length} fix{issue.fixes.length !== 1 ? 'es' : ''} available (detailed view in feat-019)
-            </p>
+            <h5 className="text-sm font-semibold text-bronze-400 mb-3">
+              Suggested Fixes ({issue.fixes.length})
+            </h5>
+            <div className="space-y-3">
+              {issue.fixes.map((fix, index) => (
+                <SuggestedFixCard key={index} fix={fix} />
+              ))}
+            </div>
           </div>
         </div>
       )}

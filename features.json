@@ -273,7 +273,7 @@
         "Copy-to-clipboard button for redline text",
         "Visual distinction between soft and hard fixes"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 2
     },
     {
