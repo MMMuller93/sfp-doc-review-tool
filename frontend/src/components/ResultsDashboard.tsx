@@ -161,29 +161,29 @@ function IssueCard({ issue }: { issue: Issue }) {
     <div className={`rounded-lg border-2 ${riskConfig.bgColor} ${riskConfig.borderColor} overflow-hidden`}>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-6 py-4 text-left flex items-center justify-between gap-4 group hover:bg-white/5 transition-colors"
+        className="w-full px-4 sm:px-6 py-3 sm:py-4 text-left flex items-center justify-between gap-3 sm:gap-4 group hover:bg-white/5 transition-colors"
       >
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase ${riskConfig.bgColor} ${riskConfig.color}`}>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
+            <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold uppercase ${riskConfig.bgColor} ${riskConfig.color}`}>
               {issue.risk}
             </span>
-            <span className="px-3 py-1 bg-stone-900/50 rounded-full text-xs text-bronze-200">
+            <span className="px-2 sm:px-3 py-1 bg-stone-900/50 rounded-full text-xs text-bronze-200">
               {formatTopic(issue.topic)}
             </span>
           </div>
-          <h4 className="text-xl font-semibold text-bronze-50 mb-2">{issue.title}</h4>
-          <p className="text-bronze-200/80 leading-relaxed">{issue.summary}</p>
+          <h4 className="text-lg sm:text-xl font-semibold text-bronze-50 mb-2">{issue.title}</h4>
+          <p className="text-sm sm:text-base text-bronze-200/80 leading-relaxed">{issue.summary}</p>
         </div>
         <ChevronDown
-          className={`w-6 h-6 text-bronze-500 flex-shrink-0 transition-transform ${
+          className={`w-5 h-5 sm:w-6 sm:h-6 text-bronze-500 flex-shrink-0 transition-transform ${
             isExpanded ? 'rotate-180' : ''
           }`}
         />
       </button>
 
       {isExpanded && (
-        <div className="px-6 pb-6 space-y-4 border-t border-stone-800/50">
+        <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4 border-t border-stone-800/50">
           {/* Impact Analysis */}
           <div className="pt-4">
             <h5 className="text-sm font-semibold text-bronze-400 mb-2">Impact Analysis</h5>
@@ -311,12 +311,12 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
     <section id="results-section" className="py-20 px-6 bg-stone-950 border-t border-stone-900">
       <div className="max-w-5xl mx-auto">
         {/* Header with Title and Export Buttons */}
-        <div className="flex items-center justify-between mb-12">
-          <h2 className="text-4xl font-serif font-bold text-bronze-50">Analysis Results</h2>
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-12">
+          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-bronze-50">Analysis Results</h2>
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={handleExportToJSON}
-              className="flex items-center gap-2 px-4 py-2.5 bg-stone-900 hover:bg-stone-800 border border-stone-700 text-bronze-200 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 bg-stone-900 hover:bg-stone-800 border border-stone-700 text-bronze-200 rounded-lg transition-colors text-sm"
               title="Export raw JSON data"
             >
               <Code className="w-4 h-4" />
@@ -325,7 +325,7 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
             <button
               onClick={handleExportToWord}
               disabled={isExporting}
-              className="flex items-center gap-2 px-6 py-3 bg-bronze-500 hover:bg-bronze-400 disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-semibold rounded-lg transition-colors"
+              className="flex items-center gap-2 px-6 py-3 bg-bronze-500 hover:bg-bronze-400 disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-semibold rounded-lg transition-colors text-sm sm:text-base"
             >
               <Download className="w-5 h-5" />
               {isExporting ? 'Exporting...' : 'Export to Word'}
@@ -335,20 +335,20 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
 
         {/* Verdict Card */}
         <div
-          className={`mb-8 p-8 rounded-lg border-2 ${verdictConfig.bgColor} ${verdictConfig.borderColor}`}
+          className={`mb-8 p-4 sm:p-8 rounded-lg border-2 ${verdictConfig.bgColor} ${verdictConfig.borderColor}`}
         >
-          <div className="flex items-start gap-6">
-            <VerdictIcon className={`w-16 h-16 ${verdictConfig.iconColor} flex-shrink-0`} strokeWidth={1.5} />
+          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+            <VerdictIcon className={`w-12 h-12 sm:w-16 sm:h-16 ${verdictConfig.iconColor} flex-shrink-0`} strokeWidth={1.5} />
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <h3 className={`text-3xl font-serif font-bold ${verdictConfig.textColor}`}>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+                <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${verdictConfig.textColor}`}>
                   {verdictConfig.label}
                 </h3>
-                <span className="px-3 py-1 bg-stone-925 border border-stone-800 rounded-full text-sm text-bronze-200">
+                <span className="px-3 py-1 bg-stone-925 border border-stone-800 rounded-full text-xs sm:text-sm text-bronze-200 self-start">
                   {result.protectingRole.toUpperCase()} Perspective
                 </span>
               </div>
-              <p className="text-bronze-200 text-lg leading-relaxed mb-6">
+              <p className="text-bronze-200 text-base sm:text-lg leading-relaxed mb-6">
                 {result.verdictRationale}
               </p>
             </div>
@@ -356,9 +356,9 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
         </div>
 
         {/* Key Action Card */}
-        <div className="mb-12 p-6 bg-bronze-500/10 border-2 border-bronze-500/50 rounded-lg">
-          <h4 className="text-lg font-semibold text-bronze-400 mb-2">Next Step</h4>
-          <p className="text-bronze-50 text-xl font-medium leading-relaxed">
+        <div className="mb-12 p-4 sm:p-6 bg-bronze-500/10 border-2 border-bronze-500/50 rounded-lg">
+          <h4 className="text-base sm:text-lg font-semibold text-bronze-400 mb-2">Next Step</h4>
+          <p className="text-bronze-50 text-lg sm:text-xl font-medium leading-relaxed">
             {result.keyAction}
           </p>
         </div>
