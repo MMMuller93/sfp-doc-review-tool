@@ -18,9 +18,11 @@ const limiter = rateLimit({
 
 // CORS configuration
 const corsOptions = {
-  origin: [
+  origin: process.env.CORS_ORIGIN === '*' ? '*' : [
     process.env.FRONTEND_URL_LOCAL || 'http://localhost:5173',
-    process.env.FRONTEND_URL_PROD || ''
+    process.env.FRONTEND_URL_PROD || 'https://mmmuller93.github.io',
+    'https://mmmuller93.github.io',
+    'https://tools.strategicfundpartners.com'
   ].filter(Boolean),
   methods: ['GET', 'POST'],
   credentials: true,
