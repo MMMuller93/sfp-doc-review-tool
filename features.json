@@ -300,7 +300,7 @@
         "Disclaimer text included",
         "Clear visual hierarchy"
       ],
-      "passes": false,
+      "passes": true,
       "priority": 3
     },
     {
