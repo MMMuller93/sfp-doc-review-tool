@@ -7,7 +7,8 @@ dotenv.config();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 /**
- * Get Gemini model instance with configuration
+ * Get Gemini 3 Flash model instance with configuration
+ * Latest model (Dec 2025) - Gemini 3 Pro-level reasoning at Flash speed
  * @param {Object} generationConfig - Model generation configuration
  * @returns {Object} Model instance
  */
@@ -20,7 +21,7 @@ function getModel(generationConfig = {}) {
   };
 
   return genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-3-flash',
     generationConfig: { ...defaultConfig, ...generationConfig },
   });
 }
@@ -175,7 +176,7 @@ Return only valid JSON matching the AnalysisResult schema.`;
       analysisTimestamp: new Date().toISOString(),
       targetDocumentName,
       referenceDocumentName: referenceDocumentName || undefined,
-      modelUsed: 'gemini-1.5-flash',
+      modelUsed: 'gemini-3-flash',
     };
 
     return analysis;
