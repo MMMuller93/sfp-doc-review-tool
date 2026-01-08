@@ -11,7 +11,13 @@ interface UploadedFile {
 }
 
 interface DocumentUploadProps {
-  onAnalysisComplete: (result: AnalysisResult) => void;
+  onAnalysisComplete: (
+    result: AnalysisResult,
+    targetDocText: string,
+    targetDocName: string,
+    refDocText?: string,
+    refDocName?: string
+  ) => void;
 }
 
 export default function DocumentUpload({ onAnalysisComplete }: DocumentUploadProps) {
@@ -125,8 +131,14 @@ export default function DocumentUpload({ onAnalysisComplete }: DocumentUploadPro
       const result = await response.json();
       console.log('Analysis result:', result);
 
-      // Pass analysis result to parent for display
-      onAnalysisComplete(result.analysis);
+      // Pass analysis result and document texts to parent for display and chat
+      onAnalysisComplete(
+        result.analysis,
+        result.documentTexts.target,
+        result.documentTexts.targetName,
+        result.documentTexts.reference,
+        result.documentTexts.referenceName
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Analysis failed');
     } finally {

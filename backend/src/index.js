@@ -45,10 +45,12 @@ app.get('/health', (req, res) => {
 import classifyRouter from './routes/classify.js';
 import analyzeRouter from './routes/analyze.js';
 import uploadRouter from './routes/upload.js';
+import chatRouter from './routes/chat.js';
 
 app.use('/api/classify', classifyRouter);
 app.use('/api/analyze', analyzeRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/chat', chatRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

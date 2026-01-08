@@ -110,7 +110,7 @@ router.post(
         referenceDocumentName: referenceFile ? referenceFile.originalname : null,
       });
 
-      // Return both classification and analysis
+      // Return classification, analysis, and document texts (for chat feature)
       res.json({
         classification: classification || {
           inferredRole: finalUserRole,
@@ -120,6 +120,12 @@ router.post(
           rationale: 'User manually selected role',
         },
         analysis,
+        documentTexts: {
+          target: targetDocumentText,
+          targetName: targetFile.originalname,
+          reference: referenceDocumentText || undefined,
+          referenceName: referenceFile ? referenceFile.originalname : undefined,
+        },
       });
     } catch (error) {
       console.error('Upload/analyze route error:', error);

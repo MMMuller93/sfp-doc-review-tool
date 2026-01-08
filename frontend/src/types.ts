@@ -113,3 +113,78 @@ export interface APIError {
   error: string;
   details?: string;
 }
+
+// === CHAT & CONVERSATION TYPES ===
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+export interface ConversationHistory {
+  messages: ChatMessage[];
+}
+
+export interface ChatRequest {
+  sessionId: string;
+  message: string;
+  conversationHistory: ChatMessage[];
+}
+
+export interface ChatResponse {
+  reply: string;
+  conversationHistory: ChatMessage[];
+}
+
+// === SESSION STATE TYPES ===
+export interface SessionState {
+  sessionId: string;
+  analysisResult: AnalysisResult | null;
+  targetDocumentText: string;
+  targetDocumentName: string;
+  referenceDocumentText?: string;
+  referenceDocumentName?: string;
+  conversationHistory: ChatMessage[];
+  createdAt: string;
+}
+
+// === DRAFTING TYPES ===
+export interface DraftRequest {
+  sessionId: string;
+  prompt: string;
+  referenceDocument?: string;
+  userRole: UserRole;
+  jurisdiction?: string;
+}
+
+export interface DraftResponse {
+  draftedDocument: string;
+  commentary: string;
+  downloadUrl?: string;
+}
+
+// === CONSISTENCY CHECK TYPES ===
+export interface DocumentForComparison {
+  name: string;
+  text: string;
+}
+
+export interface Conflict {
+  id: string;
+  severity: 'blocker' | 'major' | 'minor';
+  title: string;
+  doc1Ref: ClauseReference;
+  doc2Ref: ClauseReference;
+  explanation: string;
+  resolution: string;
+}
+
+export interface ConsistencyCheckRequest {
+  documents: DocumentForComparison[];
+  userRole: UserRole;
+}
+
+export interface ConsistencyCheckResult {
+  conflicts: Conflict[];
+}

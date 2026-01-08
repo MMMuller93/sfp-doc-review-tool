@@ -306,3 +306,120 @@ function getLPPrompt() {
 **How to Frame Issues:**
 "This provision falls below institutional LP standards because [specific gap]. Recommend [expanding language] to secure [LP protection]. ILPA Principles suggest [benchmark]."`;
 }
+
+/**
+ * Handle conversational chat about analyzed documents
+ * @param {Object} params - Chat parameters
+ * @param {string} params.message - User's question or request
+ * @param {Array} params.conversationHistory - Previous chat messages
+ * @param {Object} params.analysisContext - The AnalysisResult from previous analysis
+ * @param {Object} params.documentTexts - Full document texts
+ * @returns {Promise<string>} AI response
+ */
+export async function handleChatMessage({
+  message,
+  conversationHistory = [],
+  analysisContext,
+  documentTexts,
+}) {
+  // Build conversation context from history
+  const conversationContext = conversationHistory
+    .map((msg) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
+    .join('\n\n');
+
+  // Determine if this is a drafting request or Q&A
+  const isDraftingRequest = /\b(draft|write|create|generate|compose)\b/i.test(message);
+
+  // Build comprehensive prompt
+  const chatPrompt = `You are a practical fund formation lawyer helping analyze documents.
+
+CONTEXT:
+You are chatting with a ${analysisContext.protectingRole.toUpperCase()} (${
+    analysisContext.protectingRole === 'gp' ? 'General Partner / Fund Manager' : 'Limited Partner / Investor'
+  }) about their document.
+
+DOCUMENTS IN SESSION:
+- Target Document: ${documentTexts.targetName}
+${documentTexts.reference ? `- Reference Document: ${documentTexts.referenceName}` : ''}
+
+PREVIOUS ANALYSIS:
+- Verdict: ${analysisContext.verdict}
+- Rationale: ${analysisContext.verdictRationale}
+- Critical Issues: ${analysisContext.criticalIssues.length} found
+- Total Issues: ${analysisContext.issues.length} found
+- Key Action: ${analysisContext.keyAction}
+
+${conversationContext ? `CONVERSATION HISTORY:\n${conversationContext}\n\n` : ''}
+
+USER'S CURRENT QUESTION/REQUEST:
+${message}
+
+INSTRUCTIONS FOR RESPONSE:
+
+${
+  isDraftingRequest
+    ? `This is a DRAFTING REQUEST. The user wants you to generate or revise legal text.
+
+1. Generate the requested language in proper legal format
+2. Use defined terms (capitalized) consistent with the document
+3. Cite the original provision if revising
+4. Explain why your draft addresses the issue
+5. Include market justification for the proposed language
+6. Format as:
+   [Brief intro]
+
+   PROPOSED LANGUAGE:
+   [The actual drafted text]
+
+   EXPLANATION:
+   [Why this addresses the concern and is market-reasonable]`
+    : `This is a Q&A REQUEST. The user wants explanation or information.
+
+1. Answer directly and conversationally
+2. ALWAYS cite specific sections/clauses when referencing document provisions
+3. Use plain English but be precise
+4. Provide examples when helpful (e.g., "If Deal A returns 2x and Deal B returns 1.5x...")
+5. If the answer involves document interpretation, quote the relevant text
+6. If you need to reference the analysis, mention the issue number (e.g., "Issue #3 flagged this")
+7. If the information isn't in the document, say so explicitly
+8. Keep responses focused and practical`
+}
+
+DOCUMENT ACCESS:
+You have access to the full document text below. Use it to cite specific provisions.
+
+${
+  message.toLowerCase().includes('section') ||
+  message.toLowerCase().includes('clause') ||
+  message.toLowerCase().includes('article') ||
+  message.toLowerCase().includes('show me') ||
+  message.toLowerCase().includes('find')
+    ? `--- FULL TARGET DOCUMENT ---
+${documentTexts.target.substring(0, 50000)}
+${documentTexts.target.length > 50000 ? '\n[Document truncated for length]' : ''}
+---
+
+${
+  documentTexts.reference
+    ? `--- FULL REFERENCE DOCUMENT ---
+${documentTexts.reference.substring(0, 30000)}
+${documentTexts.reference.length > 30000 ? '\n[Document truncated for length]' : ''}
+---`
+    : ''
+}`
+    : '(Full document available if needed - ask me to look up specific sections)'
+}
+
+RESPONSE:`;
+
+  const model = getModel({ temperature: 0.7 });
+
+  try {
+    const result = await model.generateContent(chatPrompt);
+    const response = result.response.text();
+    return response;
+  } catch (error) {
+    console.error('Chat generation error:', error);
+    throw new Error(`Chat failed: ${error.message}`);
+  }
+}
