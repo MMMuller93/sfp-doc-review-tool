@@ -35,6 +35,14 @@ function RegulatoryFlagCard({ flag }: { flag: RegulatoryFlag }) {
           borderColor: 'border-orange-500/50',
           label: 'Needs Review',
         };
+      default:
+        return {
+          icon: Info,
+          color: 'text-stone-400',
+          bgColor: 'bg-stone-500/10',
+          borderColor: 'border-stone-500/50',
+          label: 'Unknown',
+        };
     }
   };
 
@@ -145,6 +153,8 @@ function IssueCard({ issue }: { issue: Issue }) {
         return { color: 'text-yellow-500', bgColor: 'bg-yellow-500/10', borderColor: 'border-yellow-500/50' };
       case 'standard':
         return { color: 'text-blue-500', bgColor: 'bg-blue-500/10', borderColor: 'border-blue-500/50' };
+      default:
+        return { color: 'text-stone-400', bgColor: 'bg-stone-500/10', borderColor: 'border-stone-500/50' };
     }
   };
 
@@ -273,6 +283,15 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
           iconColor: 'text-red-500',
           textColor: 'text-red-400',
           label: 'Do Not Sign',
+        };
+      default:
+        return {
+          icon: Info,
+          bgColor: 'bg-stone-500/10',
+          borderColor: 'border-stone-500/50',
+          iconColor: 'text-stone-400',
+          textColor: 'text-stone-300',
+          label: 'Analysis Complete',
         };
     }
   };

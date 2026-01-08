@@ -141,20 +141,59 @@ ${referenceDocumentText.length > 100000 ? '\n[Document truncated]' : ''}
 
 Analyze the target document from the perspective of a ${userRole.toUpperCase()} (${userRole === 'gp' ? 'General Partner / Fund Manager' : 'Limited Partner / Investor'}).
 
-Return a valid JSON object matching the AnalysisResult schema with:
-- verdict (safe-to-sign, negotiate, high-risk, or do-not-sign)
-- verdictRationale (2-3 sentences)
-- protectingRole ("${userRole}")
-- keyAction (single sentence next step)
-- criticalIssues (max 3, only blockers)
-- issues (all other issues, max 10)
-- regulatoryFlags
-- assumptions
-- metadata
+Return a valid JSON object with this EXACT structure:
 
-CRITICAL: Every issue MUST include targetRef with a verbatim quote from the document. If you cannot find supporting text, say "Not found in document" in the summary but do NOT fabricate quotes.
+{
+  "verdict": "safe-to-sign" | "negotiate" | "high-risk" | "do-not-sign",
+  "verdictRationale": "2-3 sentences explaining the verdict",
+  "protectingRole": "${userRole}",
+  "keyAction": "Single sentence: what to do next",
+  "criticalIssues": [
+    {
+      "id": "issue-001",
+      "risk": "blocker",
+      "topic": "indemnification" | "mfn" | "key-person" | "governance" | "management-fee" | "carried-interest" | "other",
+      "title": "Short headline (e.g., Uncapped Indemnification)",
+      "summary": "1-2 sentence explanation of the problem",
+      "impactAnalysis": "Why this matters to the ${userRole.toUpperCase()}",
+      "targetRef": {
+        "document": "target",
+        "locator": "Section X.X or Page Y",
+        "quote": "Exact verbatim quote, max 250 chars"
+      },
+      "fixes": [
+        {
+          "approach": "soft" | "hard",
+          "description": "What this fix accomplishes",
+          "redline": {
+            "original": "Exact text to remove",
+            "proposed": "Exact text to insert",
+            "marketJustification": "Why this change is market-reasonable"
+          }
+        }
+      ]
+    }
+  ],
+  "issues": [],
+  "regulatoryFlags": [
+    {
+      "category": "erisa" | "ubti-eci" | "foia" | "ofac-aml" | "state-law",
+      "status": "clear" | "flag" | "needs-review",
+      "summary": "Brief explanation"
+    }
+  ],
+  "assumptions": ["What you assumed or could not verify"]
+}
 
-Return only valid JSON matching the AnalysisResult schema.`;
+CRITICAL RULES:
+1. Every issue MUST have id, risk, topic, title, summary, impactAnalysis, targetRef (as object), and fixes (as array)
+2. targetRef MUST be an object with document, locator, and quote fields
+3. If you cannot find supporting text, use locator: "Not found" and quote: "Unable to locate specific text"
+4. fixes array MUST have at least one fix with approach, description, and redline
+5. criticalIssues should only contain risk: "blocker" issues (max 3)
+6. issues should contain risk: "negotiate" or "standard" issues (max 10)
+
+Return ONLY valid JSON, no markdown code blocks.`;
 
   const model = getModel({ temperature: 0.7 });
 
