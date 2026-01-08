@@ -20,7 +20,7 @@ function getModel(generationConfig = {}) {
   };
 
   return genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.5-flash',
     generationConfig: { ...defaultConfig, ...generationConfig },
   });
 }
@@ -175,7 +175,7 @@ Return only valid JSON matching the AnalysisResult schema.`;
       analysisTimestamp: new Date().toISOString(),
       targetDocumentName,
       referenceDocumentName: referenceDocumentName || undefined,
-      modelUsed: 'gemini-1.5-flash',
+      modelUsed: 'gemini-2.5-flash',
     };
 
     return analysis;
