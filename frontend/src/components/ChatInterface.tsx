@@ -62,7 +62,7 @@ export default function ChatInterface({
 
     try {
       // Call backend chat API
-      const response = await fetch('http://localhost:3001/api/chat', {
+      const response = await fetch('https://railway-up-production-7cf4.up.railway.app/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
