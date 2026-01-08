@@ -86,8 +86,8 @@ function App() {
       {/* Results Dashboard */}
       {sessionState?.analysisResult && <ResultsDashboard result={sessionState.analysisResult} />}
 
-      {/* Chat Interface (appears after analysis) */}
-      {sessionState?.analysisResult && (
+      {/* Chat Interface (appears after analysis, only if document text available) */}
+      {sessionState?.analysisResult && sessionState.targetDocumentText && (
         <div className="py-12 px-6 bg-stone-950" id="chat-section">
           <div className="max-w-5xl mx-auto">
             <ChatInterface

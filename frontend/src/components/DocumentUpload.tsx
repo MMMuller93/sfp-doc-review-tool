@@ -132,12 +132,13 @@ export default function DocumentUpload({ onAnalysisComplete }: DocumentUploadPro
       console.log('Analysis result:', result);
 
       // Pass analysis result and document texts to parent for display and chat
+      // Fallback to empty strings if documentTexts not available (backend not updated yet)
       onAnalysisComplete(
         result.analysis,
-        result.documentTexts.target,
-        result.documentTexts.targetName,
-        result.documentTexts.reference,
-        result.documentTexts.referenceName
+        result.documentTexts?.target || '',
+        result.documentTexts?.targetName || targetDocument.name,
+        result.documentTexts?.reference,
+        result.documentTexts?.referenceName
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Analysis failed');
