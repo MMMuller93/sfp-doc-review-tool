@@ -1,0 +1,137 @@
+# CLAUDE.md — Claude Code Best Practices
+
+> Distilled from Boris Cherny (creator of Claude Code) and the Anthropic Claude Code team's internal workflow.
+> Source: https://x.com/bcherny/status/2017742741636321619
+
+---
+
+## 1. Work in Parallel — This Is the Single Biggest Productivity Unlock
+
+- Use **git worktrees** to run 3–5 Claude sessions simultaneously, each in its own isolated checkout.
+- Each worktree gets its own branch, its own file state, and its own Claude context — no interference.
+- Set up shell aliases for fast switching between worktrees (e.g., `za`, `zb`, `zc` for single-keystroke navigation).
+- Keep a dedicated "analysis" worktree for logs, BigQuery queries, and exploratory data work — separate from active development.
+- Name worktrees descriptively so you always know what each session is working on.
+
+```bash
+# Create worktrees
+git worktree add ../project-feature-a -b feature-a
+git worktree add ../project-bugfix bugfix-123
+
+# Run Claude in each (separate terminals)
+cd ../project-feature-a && claude
+cd ../project-bugfix && claude
+
+# Clean up when done
+git worktree remove ../project-feature-a
+```
+
+---
+
+## 2. Start Every Complex Task in Plan Mode
+
+- Press **Shift+Tab twice** to enter Plan Mode before writing any code.
+- Pour energy into the plan so Claude can one-shot the implementation.
+- Go back and forth with Claude on the plan until you're satisfied, then switch to auto-accept edits mode.
+- If something goes sideways during implementation, **stop and re-plan** — don't push through a broken approach.
+- For high-stakes changes, spin up a second Claude to review the plan as a "staff engineer" before proceeding.
+
+---
+
+## 3. Invest in Your CLAUDE.md — Make It a Living Document
+
+- After every correction, tell Claude: **"Update your CLAUDE.md so you don't make that mistake again."**
+- Claude is eerily good at writing rules for itself. Let it draft the rule, then review and refine.
+- Keep iterating until Claude's mistake rate measurably drops.
+- Check CLAUDE.md into git so the whole team benefits. Every team member should contribute.
+- During code review, tag `@claude` on PRs to update CLAUDE.md as part of the review — every mistake becomes a rule.
+- Keep it concise and focused. Periodically refactor to remove stale or redundant entries.
+- Maintain a notes directory for per-task/per-project context. Point CLAUDE.md to these notes for deeper detail.
+
+---
+
+## 4. Create Custom Skills and Slash Commands — Commit Them to Git
+
+- If you do something more than once a day, turn it into a **slash command** or **skill**.
+- Store commands in `.claude/commands/` and check them into the repo so the team can reuse them.
+- Use inline bash in commands to pre-compute context (git status, branch info, etc.) so commands run fast without unnecessary back-and-forth.
+
+**Examples from the team:**
+- `/commit-push-pr` — full git workflow (used dozens of times daily)
+- `/techdebt` — finds duplicated code and suggests cleanup at end of session
+- A command that syncs 7 days of Slack, Google Drive, Asana, and GitHub into one context dump
+- Analytics agents that write dbt models, review code, and test in dev environments
+
+---
+
+## 5. Let Claude Fix Bugs Autonomously — Don't Micromanage
+
+- Paste a Slack bug thread into Claude and just say **"fix."**
+- Say **"Go fix the failing CI tests"** — provide the objective, not the steps.
+- Point Claude at Docker logs to troubleshoot distributed systems — it's surprisingly capable at parsing multi-service log streams.
+- Enable the Slack MCP server so Claude can pull bug context directly without copy-pasting.
+- Trust Claude to determine the debugging strategy. Intervene only when it's clearly off track.
+
+---
+
+## 6. Level Up Your Prompting
+
+- **Challenge Claude as a reviewer:** "Grill me on these changes and don't make a PR until I pass your test."
+- **Demand elegance after a mediocre first pass:** "Knowing everything you know now, scrap this and implement the elegant solution."
+- **Write detailed specs and reduce ambiguity** — the more specific and unambiguous the requirements, the better the output.
+- Use voice dictation for prompts — you speak 3x faster than you type, and prompts become significantly more detailed. On macOS, press **fn twice** to activate.
+
+---
+
+## 7. Optimize Your Terminal and Environment
+
+- Use **Ghostty** (or your preferred modern terminal) — synchronized rendering, 24-bit color, proper Unicode.
+- Run `/statusline` to always display context usage and current git branch.
+- Color-code and name your terminal tabs (one per task/worktree). Consider tmux for session management.
+- Use system notifications (e.g., iTerm2) so Claude sessions can run in the background and alert you when they need input.
+
+---
+
+## 8. Use Subagents to Scale Compute and Keep Context Clean
+
+- Append **"use subagents"** to any prompt where you want Claude to throw more compute at a problem.
+- Offload discrete tasks to subagents to keep your main context window lean and focused.
+- Use subagents for repeatable workflows: `code-simplifier` to clean up after coding, `verify-app` to test end-to-end, etc.
+- Store custom agent definitions in `.claude/agents/` and check them into git.
+- Route permission requests to Opus 4.5 via a hook to auto-approve safe operations — see [hooks docs](https://code.claude.com/docs/en/hooks#permissionrequest).
+
+---
+
+## 9. Use Claude for Data and Analytics
+
+- Use Claude with the `bq` CLI (or any database CLI/MCP/API) to pull and analyze metrics in natural language.
+- Check analytics skills into the codebase so the whole team can query data directly in Claude Code.
+- Stop writing SQL by hand — describe what you want and let Claude compose and execute the query.
+
+---
+
+## 10. Use Claude as a Learning Tool
+
+- Enable the **"Explanatory"** or **"Learning"** output style in `/config` so Claude explains the *why* behind every change.
+- Ask Claude to generate visual HTML presentations explaining unfamiliar code.
+- Have Claude draw ASCII diagrams of codebases and system architectures.
+- Build a spaced-repetition learning skill: explain your understanding, let Claude probe for gaps, store results for review.
+
+---
+
+## Workflow Summary
+
+```
+Plan (Plan Mode) → Implement (Auto-accept) → Verify (subagent/tests/browser) → Update CLAUDE.md → Ship
+```
+
+**Key principles:**
+1. Parallelize aggressively with git worktrees.
+2. Plan first, code second. Re-plan if things go sideways.
+3. Every correction becomes a rule in CLAUDE.md.
+4. Automate repeated workflows into skills and slash commands.
+5. Give Claude autonomy to debug and fix — provide objectives, not steps.
+6. Verify everything — tests, browser extension, CI. Verification 2–3x's output quality.
+7. Use `/permissions` to pre-allow safe commands instead of `--dangerously-skip-permissions`.
+8. Use a PostToolUse hook to auto-format code after every edit.
+9. Share configurations via git: `.claude/settings.json`, `.claude/commands/`, `.mcp.json`, `CLAUDE.md`.

@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime state (session-specific, not shared)
+.claude/cockpit-state.json
+.claude/auto-loop.local.md
+.claude/gastown-state.json
+.claude/settings.local.json
+
+# SQLite database (regenerated from observations)
+.llm/memory.db
+.llm/memory.db-wal
+.llm/memory.db-shm
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Node
+node_modules/
