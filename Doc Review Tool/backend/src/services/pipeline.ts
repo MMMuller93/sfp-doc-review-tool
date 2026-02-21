@@ -1,11 +1,13 @@
 import { classifyDocument } from '../pipeline/classify';
-import { analyzeDocument } from '../pipeline/analyze';
+import { extractStructure, extractStructureLongDocument } from '../pipeline/extract-structure';
+import { analyzeDocument, analyzeDocumentSectioned } from '../pipeline/analyze';
 import { verifyAnalysis } from '../pipeline/verify';
 import { synthesizeResult } from '../pipeline/synthesize';
 import { SSEWriter } from '../utils/sse';
 import { MODELS } from './llm';
 import type {
   AnalysisResult,
+  DocumentStructure,
   UserRole,
   PipelineStage,
   PipelineStageStatus,
@@ -15,6 +17,7 @@ interface PipelineParams {
   documentText: string;
   documentName: string;
   userRole: UserRole;
+  pageTexts?: string[]; // Per-page text for structure extraction
   referenceDocumentText?: string;
   referenceDocumentName?: string;
   usePremiumModel?: boolean;
@@ -77,31 +80,67 @@ export async function runPipeline(params: PipelineParams): Promise<AnalysisResul
   }
 
   try {
-    // === STAGE 1: CLASSIFY ===
+    // === STAGES 1 & 2: CLASSIFY + EXTRACT STRUCTURE (parallel) ===
     updateStage('classify', 'running');
+    updateStage('extract-structure', 'running');
+
     const classifyStart = Date.now();
+    const structureStart = Date.now();
 
-    const { result: classification } = await classifyDocument(
-      params.documentText.substring(0, 5000),
-      params.userRole,
-    );
+    // Run classify and structure extraction in parallel
+    const isLongDocument = params.pageTexts && params.pageTexts.length >= 50;
 
-    stageTimings.classify = Date.now() - classifyStart;
-    modelsUsed.push(MODELS.HAIKU);
-    updateStage('classify', 'complete');
+    const [classifyResult, structureResult] = await Promise.all([
+      // Stage 1: Classify
+      classifyDocument(
+        params.documentText.substring(0, 5000),
+        params.userRole,
+      ).then((res) => {
+        stageTimings.classify = Date.now() - classifyStart;
+        modelsUsed.push(MODELS.HAIKU);
+        updateStage('classify', 'complete');
+        sse?.send('stage-complete', {
+          stage: 'classify',
+          result: {
+            documentType: res.result.documentType,
+            complexity: res.result.complexity,
+            confidence: res.result.confidence,
+          },
+        });
+        return res;
+      }),
 
-    sse?.send('stage-complete', {
-      stage: 'classify',
-      result: {
-        documentType: classification.documentType,
-        complexity: classification.complexity,
-        confidence: classification.confidence,
-      },
-    });
+      // Stage 2: Extract Structure (soft-fail: pipeline continues without structure if this fails)
+      (isLongDocument
+        ? extractStructureLongDocument(params.pageTexts!)
+        : extractStructure({
+            documentText: params.documentText,
+            pageTexts: params.pageTexts,
+            totalPages: params.pageTexts?.length,
+          }).then(({ result, response }) => ({ result, responses: [response] }))
+      ).then((res) => {
+        stageTimings['extract-structure'] = Date.now() - structureStart;
+        modelsUsed.push(MODELS.SONNET);
+        updateStage('extract-structure', 'complete');
+        sse?.send('stage-complete', {
+          stage: 'extract-structure',
+          result: {
+            sectionCount: res.result.sections.length,
+            definedTermCount: res.result.definedTerms.length,
+            crossRefCount: res.result.crossReferences.length,
+          },
+        });
+        return res;
+      }).catch((err) => {
+        // Graceful degradation: continue pipeline without structure
+        stageTimings['extract-structure'] = Date.now() - structureStart;
+        updateStage('extract-structure', 'error', (err as Error).message);
+        return null;
+      }),
+    ]);
 
-    // === STAGE 2: EXTRACT STRUCTURE (Phase 2 — skip for now) ===
-    updateStage('extract-structure', 'skipped');
-    stageTimings['extract-structure'] = 0;
+    const classification = classifyResult.result;
+    const documentStructure: DocumentStructure | undefined = structureResult?.result;
 
     // === STAGE 3: ANALYZE ===
     updateStage('analyze', 'running');
@@ -110,15 +149,22 @@ export async function runPipeline(params: PipelineParams): Promise<AnalysisResul
     const analyzeModel = params.usePremiumModel ? MODELS.OPUS : MODELS.GPT52;
     modelsUsed.push(analyzeModel);
 
-    let analyzeResult = await analyzeDocument({
+    const analyzeParams = {
       documentText: params.documentText,
       documentName: params.documentName,
       userRole: params.userRole,
       classification,
+      documentStructure,
       referenceDocumentText: params.referenceDocumentText,
       referenceDocumentName: params.referenceDocumentName,
       usePremiumModel: params.usePremiumModel,
-    });
+    };
+
+    // Use sectioned analysis for long documents with page data
+    let analyzeResult = isLongDocument
+      ? await analyzeDocumentSectioned({ ...analyzeParams, pageTexts: params.pageTexts! })
+          .then(({ result, responses }) => ({ result, response: responses[0] }))
+      : await analyzeDocument(analyzeParams);
 
     stageTimings.analyze = Date.now() - analyzeStart;
     updateStage('analyze', 'complete');
@@ -147,15 +193,10 @@ export async function runPipeline(params: PipelineParams): Promise<AnalysisResul
       });
 
       const retryStart = Date.now();
-      analyzeResult = await analyzeDocument({
-        documentText: params.documentText,
-        documentName: params.documentName,
-        userRole: params.userRole,
-        classification,
-        referenceDocumentText: params.referenceDocumentText,
-        referenceDocumentName: params.referenceDocumentName,
-        usePremiumModel: params.usePremiumModel,
-      });
+      analyzeResult = isLongDocument
+        ? await analyzeDocumentSectioned({ ...analyzeParams, pageTexts: params.pageTexts! })
+            .then(({ result, responses }) => ({ result, response: responses[0] }))
+        : await analyzeDocument(analyzeParams);
       stageTimings.analyze += Date.now() - retryStart;
 
       // Re-verify

@@ -3,6 +3,7 @@ import type {
   UserRole,
   DocumentType,
   PreflightResult,
+  DocumentStructure,
   Issue,
   RegulatoryFlag,
   LLMResponse,
@@ -20,6 +21,7 @@ interface AnalyzeParams {
   documentName: string;
   userRole: UserRole;
   classification: PreflightResult;
+  documentStructure?: DocumentStructure;
   referenceDocumentText?: string;
   referenceDocumentName?: string;
   usePremiumModel?: boolean;
@@ -64,6 +66,150 @@ export async function analyzeDocument(
   });
 
   return { result: parsed, response };
+}
+
+/**
+ * For long documents (50+ pages) with extracted structure,
+ * split by major sections and analyze in parallel.
+ * Merges results and re-assigns issue IDs.
+ */
+export async function analyzeDocumentSectioned(
+  params: AnalyzeParams & { pageTexts: string[] },
+): Promise<{ result: RawAnalysisResult; responses: LLMResponse[] }> {
+  const { documentStructure, pageTexts } = params;
+
+  if (!documentStructure || documentStructure.sections.length === 0) {
+    // Fallback to single-shot analysis
+    const single = await analyzeDocument(params);
+    return { result: single.result, responses: [single.response] };
+  }
+
+  // Group level-1 sections into analysis chunks (~20 pages each)
+  const chunks = groupSectionsIntoChunks(documentStructure.sections, pageTexts, 20);
+
+  // Analyze each chunk in parallel
+  const chunkResults = await Promise.all(
+    chunks.map((chunk) =>
+      analyzeDocument({
+        ...params,
+        documentText: chunk.text,
+        documentStructure: {
+          ...documentStructure,
+          sections: chunk.sections,
+        },
+      }),
+    ),
+  );
+
+  // Merge results
+  const allIssues: Issue[] = [];
+  const allRegFlags: RegulatoryFlag[] = [];
+  const allAssumptions: string[] = [];
+  const responses: LLMResponse[] = [];
+
+  for (const { result, response } of chunkResults) {
+    allIssues.push(...result.issues);
+    allRegFlags.push(...result.regulatoryFlags);
+    allAssumptions.push(...result.assumptions);
+    responses.push(response);
+  }
+
+  // Re-assign sequential IDs
+  allIssues.forEach((issue, i) => {
+    issue.id = `issue-${String(i + 1).padStart(3, '0')}`;
+  });
+
+  // Deduplicate regulatory flags by category
+  const flagMap = new Map<string, RegulatoryFlag>();
+  for (const flag of allRegFlags) {
+    const existing = flagMap.get(flag.category);
+    // Keep the more severe status
+    if (!existing || severityOrder(flag.status) > severityOrder(existing.status)) {
+      flagMap.set(flag.category, flag);
+    }
+  }
+
+  // Deduplicate assumptions
+  const uniqueAssumptions = [...new Set(allAssumptions)];
+
+  return {
+    result: {
+      issues: allIssues,
+      regulatoryFlags: Array.from(flagMap.values()),
+      assumptions: uniqueAssumptions,
+    },
+    responses,
+  };
+}
+
+interface AnalysisChunk {
+  sections: DocumentStructure['sections'];
+  text: string;
+}
+
+function groupSectionsIntoChunks(
+  sections: DocumentStructure['sections'],
+  pageTexts: string[],
+  targetPagesPerChunk: number,
+): AnalysisChunk[] {
+  const level1Sections = sections.filter((s) => s.level === 1);
+  if (level1Sections.length === 0) {
+    // No structure — return entire document as one chunk
+    return [{
+      sections,
+      text: pageTexts.join('\f'),
+    }];
+  }
+
+  const chunks: AnalysisChunk[] = [];
+  let currentSections: typeof sections = [];
+  let currentPageStart = 0;
+  let currentPageCount = 0;
+
+  for (const section of level1Sections) {
+    const sectionPages = section.pageEnd - section.pageStart + 1;
+
+    // If adding this section exceeds target, flush current chunk
+    if (currentPageCount > 0 && currentPageCount + sectionPages > targetPagesPerChunk) {
+      const pageEnd = Math.min(section.pageStart - 1, pageTexts.length - 1);
+      chunks.push({
+        sections: currentSections,
+        text: pageTexts.slice(currentPageStart, pageEnd + 1)
+          .map((p, i) => `--- PAGE ${currentPageStart + i + 1} ---\n${p}`)
+          .join('\n\n'),
+      });
+      currentSections = [];
+      currentPageStart = section.pageStart - 1; // 0-indexed
+      currentPageCount = 0;
+    }
+
+    currentSections.push(
+      section,
+      ...sections.filter((s) => s.level > 1 && s.pageStart >= section.pageStart && s.pageEnd <= section.pageEnd),
+    );
+    currentPageCount += sectionPages;
+  }
+
+  // Flush remaining
+  if (currentSections.length > 0) {
+    chunks.push({
+      sections: currentSections,
+      text: pageTexts.slice(currentPageStart)
+        .map((p, i) => `--- PAGE ${currentPageStart + i + 1} ---\n${p}`)
+        .join('\n\n'),
+    });
+  }
+
+  return chunks;
+}
+
+function severityOrder(status: RegulatoryFlag['status']): number {
+  switch (status) {
+    case 'flag': return 2;
+    case 'needs-review': return 1;
+    case 'clear': return 0;
+    default: return -1;
+  }
 }
 
 function buildAnalysisSystemPrompt(userRole: UserRole, documentType: DocumentType): string {
@@ -215,7 +361,14 @@ function buildAnalysisUserMessage(params: AnalyzeParams): string {
   let message = `Analyze this ${params.classification.documentType} document from the perspective of a ${params.userRole.toUpperCase()} (${params.userRole === 'gp' ? 'General Partner / Fund Manager' : 'Limited Partner / Investor'}).
 
 Document classification: ${params.classification.documentType} (${params.classification.confidence} confidence)
-Complexity: ${params.classification.complexity || 'moderate'}
+Complexity: ${params.classification.complexity || 'moderate'}`;
+
+  // Include extracted structure context when available
+  if (params.documentStructure) {
+    message += `\n\n${formatStructureContext(params.documentStructure)}`;
+  }
+
+  message += `
 
 --- TARGET DOCUMENT: ${params.documentName} ---
 ${params.documentText}
@@ -236,4 +389,64 @@ Compare the target document against this reference. Flag any conflicts or deviat
 Return your analysis as valid JSON matching the schema described in your instructions.`;
 
   return message;
+}
+
+/**
+ * Format DocumentStructure as concise context for the analysis prompt.
+ * This gives the analyzer a roadmap of the document before reading the full text.
+ */
+function formatStructureContext(structure: DocumentStructure): string {
+  const parts: string[] = ['--- DOCUMENT STRUCTURE (pre-extracted) ---'];
+
+  // Table of contents
+  if (structure.sections.length > 0) {
+    parts.push('\nSECTIONS:');
+    for (const section of structure.sections) {
+      const indent = section.level === 1 ? '' : '  ';
+      parts.push(`${indent}${section.title} (pp. ${section.pageStart}-${section.pageEnd}): ${section.content}`);
+    }
+  }
+
+  // Defined terms — compact list
+  if (structure.definedTerms.length > 0) {
+    parts.push(`\nDEFINED TERMS (${structure.definedTerms.length}):`);
+    for (const term of structure.definedTerms) {
+      const def = term.definition.length > 150
+        ? term.definition.substring(0, 150) + '...'
+        : term.definition;
+      parts.push(`- "${term.term}" [${term.location}]: ${def}`);
+    }
+  }
+
+  // Key cross-references
+  if (structure.crossReferences.length > 0) {
+    parts.push(`\nCROSS-REFERENCES (${structure.crossReferences.length}):`);
+    for (const ref of structure.crossReferences.slice(0, 10)) {
+      parts.push(`- ${ref.from} → ${ref.to}: ${ref.context}`);
+    }
+  }
+
+  // Parties
+  if (structure.parties.length > 0) {
+    parts.push(`\nPARTIES: ${structure.parties.join('; ')}`);
+  }
+
+  // Key dates
+  if (structure.dates.length > 0) {
+    parts.push('\nKEY DATES:');
+    for (const date of structure.dates) {
+      parts.push(`- ${date.label}: ${date.value}`);
+    }
+  }
+
+  // Economics
+  if (structure.economics.length > 0) {
+    parts.push('\nECONOMICS:');
+    for (const econ of structure.economics) {
+      parts.push(`- ${econ.label}: ${econ.value}`);
+    }
+  }
+
+  parts.push('--- END STRUCTURE ---');
+  return parts.join('\n');
 }
