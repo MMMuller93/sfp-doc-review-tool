@@ -11,6 +11,7 @@ import { lpaModule } from '../src/modules/lpa';
 import { ppmModule } from '../src/modules/ppm';
 import { subDocModule } from '../src/modules/sub-doc';
 import { sideLetterModule } from '../src/modules/side-letter';
+import { coInvestModule } from '../src/modules/co-invest';
 import { generalModule } from '../src/modules/general';
 import type { DocumentType } from '@shared/types';
 
@@ -21,6 +22,7 @@ describe('review modules', () => {
       expect(getModule('ppm')).toBe(ppmModule);
       expect(getModule('sub-doc')).toBe(subDocModule);
       expect(getModule('side-letter')).toBe(sideLetterModule);
+      expect(getModule('co-invest')).toBe(coInvestModule);
     });
 
     it('falls back to general module for unknown types', () => {
@@ -35,6 +37,7 @@ describe('review modules', () => {
       expect(hasSpecializedModule('ppm')).toBe(true);
       expect(hasSpecializedModule('sub-doc')).toBe(true);
       expect(hasSpecializedModule('side-letter')).toBe(true);
+      expect(hasSpecializedModule('co-invest')).toBe(true);
       expect(hasSpecializedModule('amendment')).toBe(false);
       expect(hasSpecializedModule('other')).toBe(false);
     });
@@ -45,12 +48,13 @@ describe('review modules', () => {
       expect(types).toContain('ppm');
       expect(types).toContain('sub-doc');
       expect(types).toContain('side-letter');
-      expect(types).toHaveLength(4);
+      expect(types).toContain('co-invest');
+      expect(types).toHaveLength(5);
     });
   });
 
   describe('module structure', () => {
-    const allModules = [lpaModule, ppmModule, subDocModule, sideLetterModule, generalModule];
+    const allModules = [lpaModule, ppmModule, subDocModule, sideLetterModule, coInvestModule, generalModule];
 
     it('every module has required fields', () => {
       for (const module of allModules) {
@@ -152,10 +156,11 @@ describe('review modules', () => {
       expect(items).toHaveLength(13);
     });
 
-    it('returns general checklist for unknown types', () => {
+    it('returns general + sub-type checklist for non-specialized types', () => {
       const items = getMandatoryChecklist('capital-call', 'gp');
       expect(items.every((i) => i.required)).toBe(true);
-      expect(items).toHaveLength(6); // general module has 6 mandatory
+      // general (6) + capital-call sub-type (4) = 10
+      expect(items).toHaveLength(10);
     });
   });
 
