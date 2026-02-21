@@ -34,3 +34,11 @@ _Mistakes to never repeat. Populated by user corrections._
 - **Agent**: None
 - **Task**: hello world
 
+
+---
+## Checkpoint: 2026-02-20 18:55 (pre-compact)
+- **Mode**: light
+- **Phase**: direct
+- **Agent**: None
+- **Task**: hello world
+
