@@ -1,6 +1,6 @@
 import { classifyDocument } from '../pipeline/classify';
 import { extractStructure, extractStructureLongDocument } from '../pipeline/extract-structure';
-import { analyzeDocument, analyzeDocumentSectioned } from '../pipeline/analyze';
+import { analyzeDocument, analyzeDocumentSectioned, fillChecklistGaps } from '../pipeline/analyze';
 import { verifyAnalysis } from '../pipeline/verify';
 import { synthesizeResult } from '../pipeline/synthesize';
 import { SSEWriter } from '../utils/sse';
@@ -166,6 +166,10 @@ export async function runPipeline(params: PipelineParams): Promise<AnalysisResul
           .then(({ result, responses }) => ({ result, response: responses[0] }))
       : await analyzeDocument(analyzeParams);
 
+    // Fill checklist gaps — targeted follow-up for missing mandatory items
+    const { result: gapFilledResult } = await fillChecklistGaps(analyzeParams, analyzeResult.result);
+    analyzeResult = { ...analyzeResult, result: gapFilledResult };
+
     stageTimings.analyze = Date.now() - analyzeStart;
     updateStage('analyze', 'complete');
 
@@ -197,6 +201,11 @@ export async function runPipeline(params: PipelineParams): Promise<AnalysisResul
         ? await analyzeDocumentSectioned({ ...analyzeParams, pageTexts: params.pageTexts! })
             .then(({ result, responses }) => ({ result, response: responses[0] }))
         : await analyzeDocument(analyzeParams);
+
+      // Fill checklist gaps on retry too
+      const { result: retryGapFilled } = await fillChecklistGaps(analyzeParams, analyzeResult.result);
+      analyzeResult = { ...analyzeResult, result: retryGapFilled };
+
       stageTimings.analyze += Date.now() - retryStart;
 
       // Re-verify
