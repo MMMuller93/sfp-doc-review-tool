@@ -39,9 +39,20 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Apply rate limiting to API routes
 app.use('/api', limiter);
 
-// Health check
+// Health check — includes pipeline version info for feature flag
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    pipelines: {
+      v1: { available: !!process.env.GEMINI_API_KEY, engine: 'gemini' },
+      v2: {
+        available: !!(process.env.ANTHROPIC_API_KEY && process.env.OPENAI_API_KEY),
+        engine: 'multi-provider',
+        models: ['haiku-4.5', 'sonnet-4.6', 'gpt-5.2'],
+      },
+    },
+  });
 });
 
 // API routes

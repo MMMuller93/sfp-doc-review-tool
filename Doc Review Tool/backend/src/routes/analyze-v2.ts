@@ -1,68 +1,82 @@
 import express, { type Request, type Response } from 'express';
 import { SSEWriter } from '../utils/sse';
+import { runPipeline } from '../services/pipeline';
+import type { UserRole } from '@shared/types';
 
 const router = express.Router();
+
+interface V2AnalyzeBody {
+  targetDocumentText?: string;
+  targetDocumentName?: string;
+  userRole?: UserRole;
+  referenceDocumentText?: string;
+  referenceDocumentName?: string;
+  usePremiumModel?: boolean;
+}
 
 /**
  * POST /api/v2/analyze/stream
  * v2 pipeline endpoint with SSE progress streaming.
- * STUB — will be implemented in Phase 1 (Core Engine).
+ * Runs the full multi-stage pipeline: classify → analyze → verify → synthesize.
  */
 router.post('/stream', async (req: Request, res: Response) => {
   const sse = new SSEWriter(res);
 
   try {
-    const { targetDocumentText, userRole } = req.body as {
-      targetDocumentText?: string;
-      userRole?: string;
-    };
+    const body = req.body as V2AnalyzeBody;
 
-    if (!targetDocumentText || !userRole) {
+    if (!body.targetDocumentText || !body.userRole) {
       sse.sendError('targetDocumentText and userRole are required');
       return;
     }
 
-    // Stub: simulate pipeline stages
-    const stages = ['classify', 'extract-structure', 'analyze', 'review-verify', 'synthesize'];
-
-    for (const stage of stages) {
-      sse.send('progress', {
-        currentStage: stage,
-        status: 'running',
-        message: `Stage: ${stage} (stub — not yet implemented)`,
-      });
-
-      // Simulate work
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      sse.send('stage-complete', {
-        stage,
-        status: 'complete',
-      });
-    }
-
-    // Send stub result
-    sse.send('result', {
-      verdict: 'negotiate',
-      verdictRationale: 'This is a stub response from the v2 pipeline skeleton.',
-      protectingRole: userRole,
-      keyAction: 'Implement the actual pipeline in Phase 1.',
-      criticalIssues: [],
-      issues: [],
-      regulatoryFlags: [],
-      assumptions: ['This is a placeholder response'],
-      metadata: {
-        analysisTimestamp: new Date().toISOString(),
-        targetDocumentName: 'stub',
-        modelUsed: 'none (stub)',
-        pipelineVersion: 'v2',
-      },
+    await runPipeline({
+      documentText: body.targetDocumentText,
+      documentName: body.targetDocumentName || 'document',
+      userRole: body.userRole,
+      referenceDocumentText: body.referenceDocumentText,
+      referenceDocumentName: body.referenceDocumentName,
+      usePremiumModel: body.usePremiumModel,
+      sse,
     });
-
-    sse.close();
+    // Pipeline handles sse.send('result', ...) and sse.close() internally
   } catch (error) {
     console.error('v2 analyze stream error:', error);
-    sse.sendError((error as Error).message);
+    // Pipeline already sent error via SSE if it threw after starting
+    if (!res.headersSent) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  }
+});
+
+/**
+ * POST /api/v2/analyze
+ * v2 pipeline endpoint without streaming (returns JSON directly).
+ * Useful for testing and clients that don't support SSE.
+ */
+router.post('/', async (req: Request, res: Response) => {
+  try {
+    const body = req.body as V2AnalyzeBody;
+
+    if (!body.targetDocumentText || !body.userRole) {
+      res.status(400).json({ error: 'targetDocumentText and userRole are required' });
+      return;
+    }
+
+    const result = await runPipeline({
+      documentText: body.targetDocumentText,
+      documentName: body.targetDocumentName || 'document',
+      userRole: body.userRole,
+      referenceDocumentText: body.referenceDocumentText,
+      referenceDocumentName: body.referenceDocumentName,
+      usePremiumModel: body.usePremiumModel,
+      // No SSE — result returned directly
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('v2 analyze error:', error);
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 

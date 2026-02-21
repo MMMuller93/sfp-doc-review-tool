@@ -595,6 +595,121 @@
       ],
       "passes": true,
       "priority": 1
+    },
+    {
+      "id": "v2-101",
+      "category": "infrastructure",
+      "description": "LLM abstraction layer — unified interface for Claude, OpenAI, future providers",
+      "acceptanceCriteria": [
+        "services/llm.ts exports callLLM() with provider routing",
+        "MODELS constant with all model IDs",
+        "parseJSONResponse() helper for structured output parsing",
+        "Routes to callClaude() for anthropic, callGPT() for openai",
+        "Compiles with zero TS errors"
+      ],
+      "passes": true,
+      "priority": 1
+    },
+    {
+      "id": "v2-102",
+      "category": "infrastructure",
+      "description": "Algorithmic quote verification — 3-tier VERIFIED/REVIEW/REJECTED",
+      "acceptanceCriteria": [
+        "utils/fuzzy-match.ts implements verifyQuote() and verifyQuotes()",
+        "Uses n-gram precision (0.5), LCS ratio (0.3), contiguity (0.2) weighted score",
+        "VERIFIED threshold >0.75, REVIEW 0.50-0.75, REJECTED <0.50",
+        "Real quotes score VERIFIED, fabricated quotes score REJECTED",
+        "9 passing tests in fuzzy-match.test.ts"
+      ],
+      "passes": true,
+      "priority": 1
+    },
+    {
+      "id": "v2-103",
+      "category": "functional",
+      "description": "Stage 1: Classify — Haiku 4.5 document classification",
+      "acceptanceCriteria": [
+        "pipeline/classify.ts uses Haiku 4.5 at temperature 0.0",
+        "Classifies document type from expanded taxonomy (12 types)",
+        "Returns PreflightResult with complexity assessment",
+        "Overrides role with user selection when provided",
+        "Uses prompt caching on system prompt"
+      ],
+      "passes": true,
+      "priority": 1
+    },
+    {
+      "id": "v2-104",
+      "category": "functional",
+      "description": "Stage 3: Analyze — GPT-5.2 / Opus deep analysis with evidence citations",
+      "acceptanceCriteria": [
+        "pipeline/analyze.ts uses GPT-5.2 (standard) or Opus 4.6 (premium)",
+        "Temperature 0.2 for legal analysis",
+        "Role-specific prompts (GP and LP perspectives)",
+        "Document-type-specific guidance for side-letter, lpa, ppm, sub-doc, amendment, capital-call",
+        "Returns RawAnalysisResult with issues, regulatoryFlags, assumptions",
+        "Uses json_object response format (no regex parsing)"
+      ],
+      "passes": true,
+      "priority": 1
+    },
+    {
+      "id": "v2-105",
+      "category": "functional",
+      "description": "Stage 4: Review + Verify — algorithmic + Sonnet 4.6 LLM verification",
+      "acceptanceCriteria": [
+        "pipeline/verify.ts runs algorithmic quote matching first",
+        "Sends REVIEW-tier and REJECTED quotes to Sonnet 4.6 for LLM review",
+        "LLM can correct quotes or flag issues as hallucinated",
+        "Returns shouldRetry=true if >2 hallucinated issues",
+        "Strips hallucinated issues from output"
+      ],
+      "passes": true,
+      "priority": 1
+    },
+    {
+      "id": "v2-106",
+      "category": "functional",
+      "description": "Stage 5: Synthesize — Sonnet 4.6 verdict and prioritization",
+      "acceptanceCriteria": [
+        "pipeline/synthesize.ts produces final AnalysisResult",
+        "Verdict logic: safe-to-sign / negotiate / high-risk / do-not-sign",
+        "Issue prioritization by LLM",
+        "Separates blockers (max 3) from non-blockers (max 10)",
+        "Includes stage timings and model info in metadata",
+        "Handles zero-issue case without LLM call"
+      ],
+      "passes": true,
+      "priority": 1
+    },
+    {
+      "id": "v2-107",
+      "category": "functional",
+      "description": "Pipeline Orchestrator — state machine with SSE progress and retry logic",
+      "acceptanceCriteria": [
+        "services/pipeline.ts runs all stages sequentially",
+        "Sends SSE progress events at each stage transition",
+        "Skips Stage 2 (extract-structure) for Phase 1",
+        "Retries Stage 3 once if >2 hallucinations detected",
+        "Reports stage timings and models used",
+        "Error handling propagates through SSE"
+      ],
+      "passes": true,
+      "priority": 1
+    },
+    {
+      "id": "v2-108",
+      "category": "functional",
+      "description": "v2 API endpoints — streaming and non-streaming",
+      "acceptanceCriteria": [
+        "POST /api/v2/analyze/stream — SSE streaming endpoint",
+        "POST /api/v2/analyze — JSON response endpoint",
+        "Both validate required fields (targetDocumentText, userRole)",
+        "Health endpoint reports pipeline availability as feature flag",
+        "tsc --noEmit passes, vitest 15/15 pass"
+      ],
+      "passes": true,
+      "priority": 1
     }
   ]
 }

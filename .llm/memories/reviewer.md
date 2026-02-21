@@ -35,6 +35,20 @@ Learnings specific to the Reviewer agent.
 - **Remaining accepted items**: gemini.ts legacy violations (DO NOT DO #8, #10) — confined to deprecated v1 path, must not propagate to v2
 - **Recommendation**: Phase 0 COMPLETE. Clear to proceed to Phase 1 (Core Engine).
 
+### 2026-02-21: Phase 1 Gate Review (PASS)
+
+- **Result**: PASS
+- **DO NOT DO compliance**: All 10 rules pass in new Phase 1 files. Legacy gemini.ts violations (#8, #10) remain but are outside Phase 1 boundary.
+- **Architectural compliance**: All 4 decisions verified — multi-provider routing, 3-tier quote verification, SSE progress, prompt caching
+- **Temperature discipline**: classify 0.0, analyze 0.2, verify 0.0, synthesize 0.1 — all within ≤0.3
+- **Verification**: tsc --noEmit zero errors, vitest 15/15 pass
+- **Features**: v2-101 through v2-108 marked passes: true
+- **Advisory items**:
+  - Verify model IDs (claude-opus-4-6-20250116, claude-sonnet-4-6-20250116) against live API before production
+  - Add integration tests for retry path and LLM verdict logic in Phase 2
+  - gemini.ts regex JSON parsing must not propagate to v2 code
+- **Recommendation**: Phase 1 COMPLETE. Clear to proceed to Phase 2 (Document Intelligence).
+
 ---
 
 ## Learnings
@@ -45,12 +59,12 @@ Learnings specific to the Reviewer agent.
 - These violations are acceptable in the deprecated path but must NEVER appear in any v2 pipeline code
 - When Phase 1 pipeline code is written, the reviewer should immediately check that no gemini.ts patterns were copied over
 
-### Pattern: tsconfig path alias — resolved
+### Pattern: tsconfig path alias + rootDir — fully resolved
 
-- Phase 0 Task #2 required `"paths"` in tsconfig.json pointing to shared types
-- Resolved: `"@shared/*": ["../shared/*"]` with `"baseUrl": "."`
-- Important: do NOT add `"../shared/**/*"` to `include` — causes rootDir conflict (TS6059). The `paths` alias resolves types independently without explicit inclusion
-- tsx handles the path resolution at runtime; no additional tooling needed
+- `@shared/*` maps to `../shared/*` via tsconfig `paths` with `baseUrl: "."`
+- When files actually IMPORT from `@shared/types`, TypeScript follows the import graph and pulls in `shared/types.ts`, which is outside `rootDir: "./src"` → TS6059 error
+- **Fix**: Remove `rootDir` from tsconfig entirely. TypeScript infers rootDir from the import graph. We run with `tsx` (not compiled `tsc` output), so `rootDir` only mattered for output structure — not needed now
+- For Phase 6 production build: create a separate `tsconfig.build.json` with rootDir if needed for dist/ output structure
 
 ### Pattern: Railway production deploy uses tsx, not compiled JS
 
