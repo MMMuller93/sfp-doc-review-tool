@@ -14,22 +14,36 @@ interface V2AnalyzeBody {
   usePremiumModel?: boolean;
 }
 
+/** Maximum document text size (2MB). */
+const MAX_DOCUMENT_TEXT_LENGTH = 2_000_000;
+
 /**
  * POST /api/v2/analyze/stream
  * v2 pipeline endpoint with SSE progress streaming.
  * Runs the full multi-stage pipeline: classify → analyze → verify → synthesize.
  */
 router.post('/stream', async (req: Request, res: Response) => {
+  // Validate BEFORE constructing SSEWriter so we can return proper HTTP status
+  const body = req.body as V2AnalyzeBody;
+
+  if (!body.targetDocumentText || !body.userRole) {
+    res.status(400).json({ error: 'targetDocumentText and userRole are required' });
+    return;
+  }
+
+  if (!['gp', 'lp'].includes(body.userRole)) {
+    res.status(400).json({ error: 'userRole must be "gp" or "lp"' });
+    return;
+  }
+
+  if (typeof body.targetDocumentText !== 'string' || body.targetDocumentText.length > MAX_DOCUMENT_TEXT_LENGTH) {
+    res.status(413).json({ error: 'Document text exceeds maximum allowed length' });
+    return;
+  }
+
   const sse = new SSEWriter(res);
 
   try {
-    const body = req.body as V2AnalyzeBody;
-
-    if (!body.targetDocumentText || !body.userRole) {
-      sse.sendError('targetDocumentText and userRole are required');
-      return;
-    }
-
     await runPipeline({
       documentText: body.targetDocumentText,
       documentName: body.targetDocumentName || 'document',
@@ -60,6 +74,16 @@ router.post('/', async (req: Request, res: Response) => {
 
     if (!body.targetDocumentText || !body.userRole) {
       res.status(400).json({ error: 'targetDocumentText and userRole are required' });
+      return;
+    }
+
+    if (!['gp', 'lp'].includes(body.userRole)) {
+      res.status(400).json({ error: 'userRole must be "gp" or "lp"' });
+      return;
+    }
+
+    if (typeof body.targetDocumentText !== 'string' || body.targetDocumentText.length > MAX_DOCUMENT_TEXT_LENGTH) {
+      res.status(413).json({ error: 'Document text exceeds maximum allowed length' });
       return;
     }
 

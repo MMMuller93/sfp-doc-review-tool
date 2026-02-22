@@ -5,6 +5,7 @@ import { verifyAnalysis } from '../pipeline/verify';
 import { synthesizeResult } from '../pipeline/synthesize';
 import { SSEWriter } from '../utils/sse';
 import { MODELS } from './llm';
+import { analysisCache } from './cache';
 import type {
   AnalysisResult,
   DocumentStructure,
@@ -46,6 +47,21 @@ interface StageState {
  */
 export async function runPipeline(params: PipelineParams): Promise<AnalysisResult> {
   const { sse } = params;
+
+  // Cache check — only for non-streaming requests (SSE needs real progress events)
+  if (!sse) {
+    const cacheKey = analysisCache.buildKey(
+      params.documentText,
+      params.userRole,
+      params.usePremiumModel,
+      params.referenceDocumentText,
+    );
+    const cached = analysisCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const stageTimings: Record<string, number> = {};
   const modelsUsed: string[] = [];
 
@@ -248,6 +264,17 @@ export async function runPipeline(params: PipelineParams): Promise<AnalysisResul
     // Send final result via SSE
     sse?.send('result', finalResult);
     sse?.close();
+
+    // Cache result for non-streaming re-requests
+    if (!sse) {
+      const cacheKey = analysisCache.buildKey(
+        params.documentText,
+        params.userRole,
+        params.usePremiumModel,
+        params.referenceDocumentText,
+      );
+      analysisCache.set(cacheKey, finalResult);
+    }
 
     return finalResult;
   } catch (error) {
