@@ -1,3 +1,8 @@
+// ============================================================================
+// Doc Review Tool v2 — Frontend Types
+// Synced from shared/types.ts — this is the canonical source of truth
+// ============================================================================
+
 // === ENUMS ===
 export type UserRole = 'gp' | 'lp';
 
@@ -31,74 +36,96 @@ export type IssueTopic =
   | 'confidentiality'
   | 'other';
 
+// === DOCUMENT TYPES (expanded for v2) ===
+export type DocumentType =
+  | 'side-letter'
+  | 'lpa'
+  | 'sub-doc'
+  | 'co-invest'
+  | 'ppm'
+  | 'amendment'
+  | 'fund-notice'
+  | 'capital-call'
+  | 'consent'
+  | 'advisory-materials'
+  | 'distribution-notice'
+  | 'other';
+
 // === PREFLIGHT CLASSIFICATION ===
 export interface PreflightResult {
   inferredRole: UserRole;
   confidence: Confidence;
-  documentType: 'side-letter' | 'lpa' | 'sub-doc' | 'co-invest' | 'other';
+  documentType: DocumentType;
   directionality: 'incoming' | 'outgoing' | 'unknown';
-  rationale: string;  // One sentence explaining the inference
+  rationale: string;
+  complexity?: 'simple' | 'moderate' | 'complex';
 }
 
 // === MAIN ANALYSIS OUTPUT ===
 export interface ClauseReference {
   document: 'target' | 'reference';
-  locator: string;           // e.g., "Section 4.2", "p.12", "Article VII"
-  quote: string;             // Verbatim text, max 250 chars, use [...] for omissions
+  locator: string;
+  quote: string;
 }
 
 export interface RedlineChange {
-  original: string;          // Exact text to remove
-  proposed: string;          // Exact text to insert
-  marketJustification: string;  // Why this change is reasonable/market
+  original: string;
+  proposed: string;
+  marketJustification: string;
 }
 
 export interface SuggestedFix {
-  approach: 'soft' | 'hard';  // soft = minor tweak, hard = significant revision
-  description: string;        // What this fix accomplishes
+  approach: 'soft' | 'hard';
+  description: string;
   redline: RedlineChange;
 }
 
 export interface Issue {
-  id: string;                 // Unique identifier, e.g., "issue-001"
+  id: string;
   risk: RiskLevel;
   topic: IssueTopic;
-  title: string;              // Short headline, e.g., "Uncapped Indemnification"
-  summary: string;            // 1-2 sentence explanation of the problem
-  impactAnalysis: string;     // Why this matters to the client (GP or LP specific)
-  targetRef: ClauseReference; // Required: quote from target document
-  referenceRef?: ClauseReference;  // Optional: quote from reference if conflict
-  fixes: SuggestedFix[];      // At least one fix required
-  marketContext?: string;     // Optional: what's typical in the market
+  title: string;
+  summary: string;
+  impactAnalysis: string;
+  targetRef: ClauseReference;
+  referenceRef?: ClauseReference;
+  fixes: SuggestedFix[];
+  marketContext?: string;
+  verificationStatus?: QuoteVerificationStatus;
 }
 
 export interface RegulatoryFlag {
   category: 'erisa' | 'ubti-eci' | 'foia' | 'ofac-aml' | 'state-law';
   status: 'clear' | 'flag' | 'needs-review';
-  summary: string;            // Brief explanation
+  summary: string;
 }
 
 export interface AnalysisResult {
   verdict: Verdict;
-  verdictRationale: string;   // 2-3 sentences explaining the verdict
+  verdictRationale: string;
   protectingRole: UserRole;
-  keyAction: string;          // Single sentence: what to do next
-  criticalIssues: Issue[];    // Max 3, only risk='blocker' issues
-  issues: Issue[];            // All other issues, max 10, sorted by risk
+  keyAction: string;
+  criticalIssues: Issue[];
+  issues: Issue[];
   regulatoryFlags: RegulatoryFlag[];
-  assumptions: string[];      // What the AI assumed or couldn't verify
-  metadata: {
-    analysisTimestamp: string;
-    targetDocumentName: string;
-    referenceDocumentName?: string;
-    modelUsed: string;
-  };
+  assumptions: string[];
+  metadata: AnalysisMetadata;
+}
+
+export interface AnalysisMetadata {
+  analysisTimestamp: string;
+  targetDocumentName: string;
+  referenceDocumentName?: string;
+  modelUsed: string;
+  pipelineVersion?: 'v1' | 'v2';
+  stageTimings?: Record<string, number>;
+  totalTimeMs?: number;
 }
 
 // === API REQUEST/RESPONSE TYPES ===
 export interface ClassifyRequest {
-  documentText: string;  // First 2-3 pages
-  userRole?: UserRole;   // Optional: if user manually selected
+  documentText: string;
+  userRole?: UserRole;
 }
 
 export interface AnalyzeRequest {
@@ -120,10 +147,6 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
-}
-
-export interface ConversationHistory {
-  messages: ChatMessage[];
 }
 
 export interface ChatRequest {
@@ -149,21 +172,6 @@ export interface SessionState {
   createdAt: string;
 }
 
-// === DRAFTING TYPES ===
-export interface DraftRequest {
-  sessionId: string;
-  prompt: string;
-  referenceDocument?: string;
-  userRole: UserRole;
-  jurisdiction?: string;
-}
-
-export interface DraftResponse {
-  draftedDocument: string;
-  commentary: string;
-  downloadUrl?: string;
-}
-
 // === CONSISTENCY CHECK TYPES ===
 export interface DocumentForComparison {
   name: string;
@@ -187,4 +195,127 @@ export interface ConsistencyCheckRequest {
 
 export interface ConsistencyCheckResult {
   conflicts: Conflict[];
+}
+
+// ============================================================================
+// v2 NEW TYPES — Pipeline, Structure, Review Modules
+// ============================================================================
+
+// === DOCUMENT STRUCTURE (Stage 2 output) ===
+export interface DocumentSection {
+  id: string;
+  title: string;
+  level: number;
+  pageStart: number;
+  pageEnd: number;
+  content: string;
+}
+
+export interface DefinedTerm {
+  term: string;
+  definition: string;
+  location: string;
+}
+
+export interface CrossReference {
+  from: string;
+  to: string;
+  context: string;
+}
+
+export interface DocumentStructure {
+  sections: DocumentSection[];
+  definedTerms: DefinedTerm[];
+  crossReferences: CrossReference[];
+  parties: string[];
+  dates: Array<{ label: string; value: string }>;
+  economics: Array<{ label: string; value: string }>;
+}
+
+// === PIPELINE TYPES ===
+export type PipelineStage =
+  | 'classify'
+  | 'extract-structure'
+  | 'analyze'
+  | 'review-verify'
+  | 'synthesize';
+
+export type PipelineStageStatus = 'pending' | 'running' | 'complete' | 'error' | 'skipped';
+
+export interface PipelineStageProgress {
+  stage: PipelineStage;
+  status: PipelineStageStatus;
+  startedAt?: string;
+  completedAt?: string;
+  error?: string;
+}
+
+export interface PipelineProgress {
+  stages: PipelineStageProgress[];
+  currentStage: PipelineStage | null;
+  overallStatus: 'running' | 'complete' | 'error';
+  startedAt: string;
+  estimatedTotalMs?: number;
+}
+
+// === SSE EVENT TYPES ===
+export type SSEEventType = 'progress' | 'stage-complete' | 'result' | 'error' | 'heartbeat';
+
+export interface SSEEvent {
+  type: SSEEventType;
+  data: PipelineProgress | AnalysisResult | { message: string } | null;
+}
+
+// === QUOTE VERIFICATION (Stage 4) ===
+export type QuoteVerificationStatus = 'verified' | 'review' | 'rejected';
+
+export interface QuoteVerification {
+  originalQuote: string;
+  bestMatch: string;
+  score: number;
+  status: QuoteVerificationStatus;
+  matchDetails: {
+    lcsRatio: number;
+    contiguity: number;
+    ngramPrecision: number;
+  };
+}
+
+// === REVIEW MODULE TYPES ===
+export interface ReviewChecklistItem {
+  id: string;
+  label: string;
+  description: string;
+  required: boolean;
+}
+
+export interface ReviewModule {
+  documentType: DocumentType;
+  name: string;
+  checklist: ReviewChecklistItem[];
+  systemPromptAddendum: string;
+}
+
+// === LLM ABSTRACTION ===
+export type LLMProvider = 'anthropic' | 'openai' | 'google';
+
+export interface LLMCallConfig {
+  provider: LLMProvider;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  systemPrompt?: string;
+  cacheControl?: boolean;
+}
+
+export interface LLMResponse {
+  content: string;
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens?: number;
+    cacheWriteTokens?: number;
+  };
+  model: string;
+  latencyMs: number;
 }

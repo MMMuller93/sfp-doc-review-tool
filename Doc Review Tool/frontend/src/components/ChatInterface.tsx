@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, Sparkles, MessageCircle } from 'lucide-react';
 import type { ChatMessage, AnalysisResult } from '../types';
+import { API_BASE_URL } from '../config';
 
 interface ChatInterfaceProps {
   sessionId: string;
@@ -62,7 +63,7 @@ export default function ChatInterface({
 
     try {
       // Call backend chat API
-      const response = await fetch('https://railway-up-production-7cf4.up.railway.app/api/chat', {
+      const response = await fetch(`${API_BASE_URL}/api/v2/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -71,13 +72,10 @@ export default function ChatInterface({
           sessionId,
           message: messageContent,
           conversationHistory: messages,
-          analysisContext: analysisResult,
-          documentTexts: {
-            target: targetDocumentText,
-            targetName: targetDocumentName,
-            reference: referenceDocumentText,
-            referenceName: referenceDocumentName,
-          },
+          analysisResult,
+          documentText: targetDocumentText,
+          documentName: targetDocumentName,
+          userRole: analysisResult.protectingRole,
         }),
       });
 

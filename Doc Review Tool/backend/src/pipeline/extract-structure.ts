@@ -133,7 +133,9 @@ Return your extraction as valid JSON matching the schema in your instructions.`;
     cacheSystemPrompt: true,
   });
 
-  const parsed = parseJSONResponse<DocumentStructure>(response.content);
+  const parsed = parseJSONResponse<DocumentStructure>(response.content, [
+    'sections',
+  ]);
 
   // Ensure arrays exist
   if (!Array.isArray(parsed.sections)) parsed.sections = [];

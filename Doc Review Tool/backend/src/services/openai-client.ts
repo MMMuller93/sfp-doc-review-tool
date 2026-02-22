@@ -53,10 +53,17 @@ export async function callGPT(params: {
 
   const start = Date.now();
 
+  // gpt-5.x+ and o-series models require max_completion_tokens instead of max_tokens
+  const tokenLimit = params.maxTokens ?? 4096;
+  const useNewTokenParam = /^(gpt-5|o[134])/.test(params.model);
+  const tokenParam = useNewTokenParam
+    ? { max_completion_tokens: tokenLimit }
+    : { max_tokens: tokenLimit };
+
   const response = await openai.chat.completions.create({
     model: params.model,
     temperature: params.temperature ?? 0.2,
-    max_tokens: params.maxTokens ?? 4096,
+    ...tokenParam,
     response_format: params.responseFormat === 'json_object' ? { type: 'json_object' } : undefined,
     messages: [
       { role: 'system', content: params.systemPrompt },

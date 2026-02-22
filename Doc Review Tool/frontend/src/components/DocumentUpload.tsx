@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, X, Loader2 } from 'lucide-react';
 import type { UserRole, AnalysisResult } from '../types';
+import { API_BASE_URL } from '../config';
 
 interface UploadedFile {
   file: File;
@@ -118,7 +119,7 @@ export default function DocumentUpload({ onAnalysisComplete }: DocumentUploadPro
         formData.append('userRole', userRole);
       }
 
-      const response = await fetch('https://railway-up-production-7cf4.up.railway.app/api/upload/analyze', {
+      const response = await fetch(`${API_BASE_URL}/api/v2/upload/analyze`, {
         method: 'POST',
         body: formData,
       });

@@ -106,7 +106,12 @@ Return your synthesis as JSON.`;
     cacheSystemPrompt: true,
   });
 
-  const synthesis = parseJSONResponse<SynthesisOutput>(response.content);
+  const synthesis = parseJSONResponse<SynthesisOutput>(response.content, [
+    'verdict',
+    'verdictRationale',
+    'keyAction',
+    'issuePriority',
+  ]);
 
   // Build the final AnalysisResult
   const prioritizedIssues = prioritizeIssues(verifiedResult.issues, synthesis.issuePriority);

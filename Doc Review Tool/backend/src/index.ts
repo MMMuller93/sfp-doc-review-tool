@@ -62,6 +62,7 @@ import uploadRouter from './routes/upload';
 import chatRouter from './routes/chat';
 import analyzeV2Router from './routes/analyze-v2';
 import multiDocRouter from './routes/multi-doc';
+import uploadV2Router from './routes/upload-v2';
 import chatV2Router from './routes/chat-v2';
 import exportRouter from './routes/export';
 
@@ -70,6 +71,7 @@ app.use('/api/analyze', analyzeRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/v2/analyze', analyzeV2Router);
+app.use('/api/v2/upload', uploadV2Router);
 app.use('/api/v2/multi-doc', multiDocRouter);
 app.use('/api/v2/chat', chatV2Router);
 app.use('/api/v2/export', exportRouter);

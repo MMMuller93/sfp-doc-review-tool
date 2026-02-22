@@ -40,21 +40,22 @@ export async function analyzeDocument(
 
   const userMessage = buildAnalysisUserMessage(params);
 
-  const provider = params.usePremiumModel ? 'anthropic' : 'openai';
-  const model = params.usePremiumModel ? MODELS.OPUS : MODELS.GPT52;
-
   const response = await callLLM({
-    provider,
-    model,
+    provider: 'anthropic',
+    model: MODELS.OPUS,
     systemPrompt,
     userMessage,
     temperature: 0.2,
-    maxTokens: 8192,
+    maxTokens: 16384,
     responseFormat: 'json_object',
-    cacheSystemPrompt: params.usePremiumModel, // Cache for Anthropic only
+    cacheSystemPrompt: true,
   });
 
-  const parsed = parseJSONResponse<RawAnalysisResult>(response.content);
+  const parsed = parseJSONResponse<RawAnalysisResult>(response.content, [
+    'issues',
+    'regulatoryFlags',
+    'assumptions',
+  ]);
 
   // Ensure arrays exist
   if (!Array.isArray(parsed.issues)) parsed.issues = [];
@@ -116,9 +117,6 @@ export async function fillChecklistGaps(
   }
 
   // Targeted follow-up for missing items
-  const provider = params.usePremiumModel ? 'anthropic' : 'openai';
-  const model = params.usePremiumModel ? MODELS.OPUS : MODELS.GPT52;
-
   const followUpPrompt = `You previously analyzed this document but did not address the following checklist items. For EACH missing item, either:
 1. Identify a specific issue/concern → output an issue object
 2. Confirm the provision is standard/acceptable → output an issue with risk: "standard" noting it meets market standards
@@ -134,16 +132,19 @@ ${params.documentText.substring(0, 80_000)}
 ---`;
 
   const response = await callLLM({
-    provider,
-    model,
+    provider: 'anthropic',
+    model: MODELS.OPUS,
     systemPrompt: buildAnalysisSystemPrompt(params.userRole, params.classification.documentType),
     userMessage: followUpPrompt,
     temperature: 0.2,
-    maxTokens: 4096,
+    maxTokens: 16384,
     responseFormat: 'json_object',
+    cacheSystemPrompt: true,
   });
 
-  const followUp = parseJSONResponse<RawAnalysisResult>(response.content);
+  const followUp = parseJSONResponse<RawAnalysisResult>(response.content, [
+    'issues',
+  ]);
   if (!Array.isArray(followUp.issues)) followUp.issues = [];
 
   // Merge follow-up issues into the main result
@@ -152,13 +153,23 @@ ${params.documentText.substring(0, 80_000)}
     issue.id = `issue-${String(nextId + i).padStart(3, '0')}`;
   });
 
+  // Deduplicate regulatory flags by category, keeping most severe status
+  const allFlags = [
+    ...currentResult.regulatoryFlags,
+    ...(followUp.regulatoryFlags || []),
+  ];
+  const flagMap = new Map<string, RegulatoryFlag>();
+  for (const flag of allFlags) {
+    const existing = flagMap.get(flag.category);
+    if (!existing || severityOrder(flag.status) > severityOrder(existing.status)) {
+      flagMap.set(flag.category, flag);
+    }
+  }
+
   return {
     result: {
       issues: [...currentResult.issues, ...followUp.issues],
-      regulatoryFlags: [
-        ...currentResult.regulatoryFlags,
-        ...(followUp.regulatoryFlags || []),
-      ],
+      regulatoryFlags: Array.from(flagMap.values()),
       assumptions: [...new Set([
         ...currentResult.assumptions,
         ...(followUp.assumptions || []),

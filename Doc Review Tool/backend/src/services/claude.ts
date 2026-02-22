@@ -53,6 +53,8 @@ export async function callClaude(params: {
 
   const start = Date.now();
 
+  // Note: Anthropic prompt caching requires minimum 4096 tokens for Opus/Sonnet
+  // (2048 for Haiku). Below the threshold, cache_control is silently ignored.
   const systemContent: Anthropic.MessageCreateParams['system'] = params.cacheSystemPrompt
     ? [
         {
@@ -72,6 +74,10 @@ export async function callClaude(params: {
   });
 
   const latencyMs = Date.now() - start;
+
+  if (response.stop_reason === 'max_tokens') {
+    console.warn(`[claude] Response truncated (max_tokens hit) for model ${params.model}. Output tokens: ${response.usage.output_tokens}`);
+  }
 
   const textBlock = response.content.find((b) => b.type === 'text');
   const content = textBlock ? textBlock.text : '';

@@ -204,7 +204,9 @@ Return your verdicts as JSON.`;
     responseFormat: 'json_object',
   });
 
-  const parsed = parseJSONResponse<{ verdicts: LLMVerdict[] }>(response.content);
+  const parsed = parseJSONResponse<{ verdicts: LLMVerdict[] }>(response.content, [
+    'verdicts',
+  ]);
 
   return {
     verdicts: parsed.verdicts || [],

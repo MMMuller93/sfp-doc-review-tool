@@ -68,7 +68,11 @@ ${documentPreview.substring(0, 5000)}
     responseFormat: 'json_object',
   });
 
-  const parsed = parseJSONResponse<PreflightResult>(response.content);
+  const parsed = parseJSONResponse<PreflightResult>(response.content, [
+    'inferredRole',
+    'documentType',
+    'confidence',
+  ]);
 
   // Override with user-selected role if provided
   if (userRole) {

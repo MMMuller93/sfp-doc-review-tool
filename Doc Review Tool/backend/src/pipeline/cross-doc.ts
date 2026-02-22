@@ -127,7 +127,9 @@ Identify every conflict, inconsistency, or discrepancy between these two documen
     responseFormat: 'json_object',
   });
 
-  const parsed = parseJSONResponse<{ conflicts: Conflict[] }>(response.content);
+  const parsed = parseJSONResponse<{ conflicts: Conflict[] }>(response.content, [
+    'conflicts',
+  ]);
 
   if (!Array.isArray(parsed.conflicts)) {
     parsed.conflicts = [];

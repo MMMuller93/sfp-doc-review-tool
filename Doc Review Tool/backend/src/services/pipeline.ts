@@ -162,7 +162,7 @@ export async function runPipeline(params: PipelineParams): Promise<AnalysisResul
     updateStage('analyze', 'running');
     const analyzeStart = Date.now();
 
-    const analyzeModel = params.usePremiumModel ? MODELS.OPUS : MODELS.GPT52;
+    const analyzeModel = MODELS.OPUS;
     modelsUsed.push(analyzeModel);
 
     const analyzeParams = {
