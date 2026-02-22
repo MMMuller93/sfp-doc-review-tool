@@ -27,8 +27,8 @@ export default function ChatInterface({
   analysisResult,
   targetDocumentText,
   targetDocumentName,
-  referenceDocumentText,
-  referenceDocumentName,
+  referenceDocumentText: _referenceDocumentText,
+  referenceDocumentName: _referenceDocumentName,
   onNewMessage,
 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
