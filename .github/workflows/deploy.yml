@@ -35,6 +35,8 @@ jobs:
       - name: Build
         working-directory: 'Doc Review Tool/frontend'
         run: npm run build
+        env:
+          VITE_API_BASE_URL: https://backend-production-d59f.up.railway.app
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

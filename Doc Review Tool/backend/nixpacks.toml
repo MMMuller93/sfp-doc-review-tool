@@ -1,0 +1,8 @@
+# Railway deployment config
+# Skip tsc build — we use tsx for direct TypeScript execution at runtime
+
+[phases.build]
+cmds = ["echo 'Skipping tsc build — using tsx runtime'"]
+
+[start]
+cmd = "npx tsx src/index.ts"
