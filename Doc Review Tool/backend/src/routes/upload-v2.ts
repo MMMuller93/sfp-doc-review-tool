@@ -2,7 +2,7 @@ import express, { type Request, type Response } from 'express';
 import multer from 'multer';
 import { parseDocument, parsePDFWithPages } from '../services/parser';
 import { runPipeline } from '../services/pipeline';
-import type { UserRole } from '@shared/types';
+import type { UserRole, DetailLevel } from '@shared/types';
 
 const router = express.Router();
 
@@ -42,7 +42,7 @@ router.post(
   ]),
   async (req: Request, res: Response) => {
     try {
-      const { userRole } = req.body as { userRole?: string };
+      const { userRole, detailLevel: rawDetailLevel } = req.body as { userRole?: string; detailLevel?: string };
       const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
 
       if (!files || !files['targetDocument'] || files['targetDocument'].length === 0) {
@@ -95,12 +95,19 @@ router.post(
         ? (userRole as UserRole)
         : 'lp';
 
+      // Validate detailLevel — default to 'standard'
+      const validDetailLevels: DetailLevel[] = ['executive', 'standard', 'diligence'];
+      const finalDetailLevel: DetailLevel = validDetailLevels.includes(rawDetailLevel as DetailLevel)
+        ? (rawDetailLevel as DetailLevel)
+        : 'standard';
+
       // Run the v2 pipeline
-      console.log(`[v2] Running pipeline with role=${finalUserRole}`);
+      console.log(`[v2] Running pipeline with role=${finalUserRole}, detailLevel=${finalDetailLevel}`);
       const analysis = await runPipeline({
         documentText: targetDocumentText,
         documentName: targetFile.originalname,
         userRole: finalUserRole,
+        detailLevel: finalDetailLevel,
         pageTexts,
         referenceDocumentText,
         referenceDocumentName: referenceFile?.originalname,

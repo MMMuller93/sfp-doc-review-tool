@@ -4,8 +4,7 @@ import HowItWorks from './components/HowItWorks';
 import WhatYouGet from './components/WhatYouGet';
 import SupportedDocuments from './components/SupportedDocuments';
 import DocumentUpload from './components/DocumentUpload';
-import ResultsDashboard from './components/ResultsDashboard';
-import ChatInterface from './components/ChatInterface';
+import AnnotatedResultsView from './components/AnnotatedResultsView';
 import TrustSecurity from './components/TrustSecurity';
 import FAQ from './components/FAQ';
 import Disclaimer from './components/Disclaimer';
@@ -83,23 +82,16 @@ function App() {
       {/* Upload Section */}
       <DocumentUpload onAnalysisComplete={handleAnalysisComplete} />
 
-      {/* Results Dashboard */}
-      {sessionState?.analysisResult && <ResultsDashboard result={sessionState.analysisResult} />}
-
-      {/* Chat Interface (appears after analysis) */}
+      {/* Results: Split-pane document viewer + analysis dashboard + chat */}
       {sessionState?.analysisResult && (
-        <div className="py-12 px-6 bg-stone-950" id="chat-section">
-          <div className="max-w-5xl mx-auto">
-            <ChatInterface
-              sessionId={sessionState.sessionId}
-              analysisResult={sessionState.analysisResult}
-              targetDocumentText={sessionState.targetDocumentText}
-              targetDocumentName={sessionState.targetDocumentName}
-              referenceDocumentText={sessionState.referenceDocumentText}
-              referenceDocumentName={sessionState.referenceDocumentName}
-            />
-          </div>
-        </div>
+        <AnnotatedResultsView
+          result={sessionState.analysisResult}
+          documentText={sessionState.targetDocumentText}
+          documentName={sessionState.targetDocumentName}
+          sessionId={sessionState.sessionId}
+          referenceDocumentText={sessionState.referenceDocumentText}
+          referenceDocumentName={sessionState.referenceDocumentName}
+        />
       )}
 
       <TrustSecurity />

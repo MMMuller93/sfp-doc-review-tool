@@ -1,6 +1,7 @@
 import { callLLM, parseJSONResponse, MODELS } from '../services/llm';
 import type {
   AnalysisResult,
+  DetailLevel,
   UserRole,
   DocumentType,
   Issue,
@@ -13,6 +14,7 @@ interface SynthesizeParams {
   verifiedResult: VerifiedAnalysisResult;
   documentName: string;
   userRole: UserRole;
+  detailLevel: DetailLevel;
   documentType: DocumentType;
   stageTimings: Record<string, number>;
   modelsUsed: string[];
@@ -33,7 +35,7 @@ interface SynthesisOutput {
 export async function synthesizeResult(
   params: SynthesizeParams,
 ): Promise<{ result: AnalysisResult; response: LLMResponse }> {
-  const { verifiedResult, userRole, documentType, documentName, stageTimings, modelsUsed } = params;
+  const { verifiedResult, userRole, detailLevel, documentType, documentName, stageTimings, modelsUsed } = params;
 
   // If there are no issues at all, produce a clean result without an LLM call
   if (verifiedResult.issues.length === 0) {
@@ -48,6 +50,24 @@ export async function synthesizeResult(
     };
   }
 
+  // Tier-dependent verdict rules
+  const verdictRules: Record<DetailLevel, string> = {
+    executive: `VERDICT RULES (Executive Scan):
+- safe-to-sign: No blockers found
+- negotiate: 1+ blockers that are potentially curable with negotiation
+- do-not-sign: Uncurable structural issues or egregious terms`,
+    standard: `VERDICT RULES:
+- safe-to-sign: No blockers, ≤2 negotiate items, predominantly standard terms
+- negotiate: No blockers but 3+ negotiate items, or significant economic impact
+- high-risk: 1-2 blockers that are potentially curable with negotiation
+- do-not-sign: 3+ blockers, or uncurable structural issues`,
+    diligence: `VERDICT RULES (Full Diligence):
+- safe-to-sign: No blockers, ≤2 negotiate items, predominantly standard terms
+- negotiate: No blockers but 3+ negotiate items, or significant economic impact
+- high-risk: 1-2 blockers that are potentially curable with negotiation
+- do-not-sign: 3+ blockers, or uncurable structural issues`,
+  };
+
   const systemPrompt = `You are a legal analysis synthesizer. Your job is to take a set of verified issues from a ${documentType} document review and produce a final verdict with prioritized action items.
 
 You MUST respond with valid JSON:
@@ -59,11 +79,7 @@ You MUST respond with valid JSON:
   "issuePriority": ["issue-001", "issue-003", "issue-002"]
 }
 
-VERDICT RULES:
-- safe-to-sign: No blockers, ≤2 negotiate items, predominantly standard terms
-- negotiate: No blockers but 3+ negotiate items, or significant economic impact
-- high-risk: 1-2 blockers that are potentially curable with negotiation
-- do-not-sign: 3+ blockers, or uncurable structural issues
+${verdictRules[detailLevel]}
 
 PRIORITY RULES:
 - Order all issue IDs from most critical to least critical
@@ -113,10 +129,16 @@ Return your synthesis as JSON.`;
     'issuePriority',
   ]);
 
-  // Build the final AnalysisResult
+  // Build the final AnalysisResult with tier-dependent caps
   const prioritizedIssues = prioritizeIssues(verifiedResult.issues, synthesis.issuePriority);
-  const blockers = prioritizedIssues.filter((i) => i.risk === 'blocker').slice(0, 3);
-  const nonBlockers = prioritizedIssues.filter((i) => i.risk !== 'blocker').slice(0, 10);
+  const caps: Record<DetailLevel, [number, number]> = {
+    executive: [3, 3],
+    standard: [3, 10],
+    diligence: [5, 25],
+  };
+  const [maxBlockers, maxNonBlockers] = caps[detailLevel];
+  const blockers = prioritizedIssues.filter((i) => i.risk === 'blocker').slice(0, maxBlockers);
+  const nonBlockers = prioritizedIssues.filter((i) => i.risk !== 'blocker').slice(0, maxNonBlockers);
 
   const totalTimeMs = Object.values(stageTimings).reduce((sum, t) => sum + t, 0);
 

@@ -8,6 +8,7 @@ import { MODELS } from './llm';
 import { analysisCache } from './cache';
 import type {
   AnalysisResult,
+  DetailLevel,
   DocumentStructure,
   UserRole,
   PipelineStage,
@@ -18,6 +19,7 @@ interface PipelineParams {
   documentText: string;
   documentName: string;
   userRole: UserRole;
+  detailLevel?: DetailLevel;
   pageTexts?: string[]; // Per-page text for structure extraction
   referenceDocumentText?: string;
   referenceDocumentName?: string;
@@ -169,6 +171,7 @@ export async function runPipeline(params: PipelineParams): Promise<AnalysisResul
       documentText: params.documentText,
       documentName: params.documentName,
       userRole: params.userRole,
+      detailLevel: params.detailLevel ?? 'standard' as DetailLevel,
       classification,
       documentStructure,
       referenceDocumentText: params.referenceDocumentText,
@@ -249,6 +252,7 @@ export async function runPipeline(params: PipelineParams): Promise<AnalysisResul
       verifiedResult: verifyResult.result,
       documentName: params.documentName,
       userRole: params.userRole,
+      detailLevel: params.detailLevel ?? 'standard' as DetailLevel,
       documentType: classification.documentType,
       stageTimings,
       modelsUsed,

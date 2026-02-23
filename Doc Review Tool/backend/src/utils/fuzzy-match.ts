@@ -71,6 +71,42 @@ export function verifyQuote(quote: string, documentText: string): QuoteVerificat
 }
 
 /**
+ * Verify a quote and return character offsets in the original document.
+ * Uses tokenizeOriginal to map normalized token indices back to char positions.
+ */
+export function verifyQuoteWithOffsets(
+  quote: string,
+  documentText: string,
+): { verification: QuoteVerification; charStart: number; charEnd: number } {
+  const verification = verifyQuote(quote, documentText);
+
+  // Only compute offsets for verified/review quotes
+  if (verification.status === 'rejected' || !quote || !documentText) {
+    return { verification, charStart: -1, charEnd: -1 };
+  }
+
+  // Map normalized token window back to original char positions
+  const normalizedQuote = normalize(quote);
+  const normalizedDoc = normalize(documentText);
+
+  if (!normalizedQuote || !normalizedDoc) {
+    return { verification, charStart: -1, charEnd: -1 };
+  }
+
+  const originalTokens = tokenizeOriginal(documentText);
+  const { bestStartIdx, bestEndIdx } = findBestMatchIndices(normalizedQuote, normalizedDoc);
+
+  if (bestStartIdx < 0 || bestEndIdx <= bestStartIdx || bestStartIdx >= originalTokens.length) {
+    return { verification, charStart: -1, charEnd: -1 };
+  }
+
+  const charStart = originalTokens[bestStartIdx].charStart;
+  const charEnd = originalTokens[Math.min(bestEndIdx - 1, originalTokens.length - 1)].charEnd;
+
+  return { verification, charStart, charEnd };
+}
+
+/**
  * Verify all quotes in an array of issues against the document.
  */
 export function verifyQuotes(
@@ -85,6 +121,99 @@ export function verifyQuotes(
 }
 
 // === Internal helpers ===
+
+interface OriginalToken {
+  normalized: string;
+  charStart: number;
+  charEnd: number;
+}
+
+/**
+ * Tokenize the original (un-normalized) text, tracking character positions.
+ * Uses \w+ which produces tokens in the same order as tokenize(normalize(text)).
+ */
+function tokenizeOriginal(text: string): OriginalToken[] {
+  const tokens: OriginalToken[] = [];
+  const wordRegex = /\w+/g;
+  let match;
+  while ((match = wordRegex.exec(text)) !== null) {
+    tokens.push({
+      normalized: match[0].toLowerCase(),
+      charStart: match.index,
+      charEnd: match.index + match[0].length,
+    });
+  }
+  return tokens;
+}
+
+/**
+ * Same sliding window as findBestMatch but returns token indices instead of joined text.
+ */
+function findBestMatchIndices(
+  normalizedQuote: string,
+  normalizedDoc: string,
+): { bestStartIdx: number; bestEndIdx: number } {
+  const quoteTokens = tokenize(normalizedQuote);
+  const docTokens = tokenize(normalizedDoc);
+
+  if (quoteTokens.length === 0 || docTokens.length === 0) {
+    return { bestStartIdx: -1, bestEndIdx: -1 };
+  }
+
+  const quoteBigrams = buildNgrams(quoteTokens, 2);
+  const quoteTrigrams = buildNgrams(quoteTokens, 3);
+
+  const windowMin = Math.max(3, Math.floor(quoteTokens.length * 0.5));
+  const windowMax = Math.min(docTokens.length, Math.ceil(quoteTokens.length * 2.5));
+
+  let bestScore = 0;
+  let bestStart = 0;
+  let bestEnd = 0;
+
+  const step = quoteTokens.length < 20 ? 1 : Math.max(1, Math.floor(quoteTokens.length / 4));
+
+  for (let start = 0; start < docTokens.length - windowMin; start += step) {
+    for (
+      let windowSize = windowMin;
+      windowSize <= windowMax && start + windowSize <= docTokens.length;
+      windowSize += Math.max(1, Math.floor(quoteTokens.length / 3))
+    ) {
+      const windowTokens = docTokens.slice(start, start + windowSize);
+
+      const windowSet = new Set(windowTokens);
+      const overlapCount = quoteTokens.filter((t) => windowSet.has(t)).length;
+      if (overlapCount / quoteTokens.length < 0.3) continue;
+
+      const windowBigrams = buildNgrams(windowTokens, 2);
+      const windowTrigrams = buildNgrams(windowTokens, 3);
+
+      const bigramHits = countIntersection(quoteBigrams, windowBigrams);
+      const trigramHits = countIntersection(quoteTrigrams, windowTrigrams);
+
+      const bigramPrecision = quoteBigrams.size > 0 ? bigramHits / quoteBigrams.size : 0;
+      const trigramPrecision = quoteTrigrams.size > 0 ? trigramHits / quoteTrigrams.size : 0;
+      const ngramPrecision = bigramPrecision * 0.4 + trigramPrecision * 0.6;
+
+      const lcsLen = lcsLength(quoteTokens, windowTokens);
+      const lcsRatio = lcsLen / quoteTokens.length;
+
+      const contiguity = computeContiguity(quoteTokens, windowTokens);
+
+      const score = ngramPrecision * 0.5 + lcsRatio * 0.3 + contiguity * 0.2;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestStart = start;
+        bestEnd = start + windowSize;
+      }
+
+      if (bestScore > 0.95) break;
+    }
+    if (bestScore > 0.95) break;
+  }
+
+  return { bestStartIdx: bestStart, bestEndIdx: bestEnd };
+}
 
 function normalize(text: string): string {
   return text

@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { CheckCircle, AlertTriangle, AlertOctagon, XCircle, ChevronDown, Copy, Check, Shield, Info, Calendar, FileText, Cpu, Download, Code } from 'lucide-react';
 import type { AnalysisResult, Issue, SuggestedFix, RegulatoryFlag } from '../types';
 import { exportToWord } from '../utils/wordExport';
 
 interface ResultsDashboardProps {
   result: AnalysisResult;
+  onIssueSelect?: (issueId: string) => void;
+  activeIssueId?: string | null;
+  embedded?: boolean; // When true, removes outer section wrapper (parent handles layout)
 }
 
 // Helper component for displaying regulatory flags
@@ -142,8 +145,27 @@ function SuggestedFixCard({ fix }: { fix: SuggestedFix }) {
 }
 
 // Helper component for individual issue cards (used for both critical and non-critical issues)
-function IssueCard({ issue }: { issue: Issue }) {
+function IssueCard({
+  issue,
+  onSelect,
+  isActive,
+}: {
+  issue: Issue;
+  onSelect?: (issueId: string) => void;
+  isActive?: boolean;
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Auto-expand and scroll when this issue becomes active (from document highlight click)
+  useEffect(() => {
+    if (isActive && !isExpanded) {
+      setIsExpanded(true);
+    }
+    if (isActive && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [isActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getRiskConfig = (risk: Issue['risk']) => {
     switch (risk) {
@@ -167,10 +189,18 @@ function IssueCard({ issue }: { issue: Issue }) {
       .join(' ');
   };
 
+  const handleToggle = () => {
+    const next = !isExpanded;
+    setIsExpanded(next);
+    if (next && onSelect) {
+      onSelect(issue.id);
+    }
+  };
+
   return (
-    <div className={`rounded-lg border-2 ${riskConfig.bgColor} ${riskConfig.borderColor} overflow-hidden`}>
+    <div ref={cardRef} className={`rounded-lg border-2 ${riskConfig.bgColor} ${riskConfig.borderColor} overflow-hidden ${isActive ? 'ring-2 ring-bronze-500/50' : ''}`}>
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={handleToggle}
         className="w-full px-4 sm:px-6 py-3 sm:py-4 text-left flex items-center justify-between gap-3 sm:gap-4 group hover:bg-white/5 transition-colors"
       >
         <div className="flex-1 min-w-0">
@@ -245,7 +275,7 @@ function IssueCard({ issue }: { issue: Issue }) {
   );
 }
 
-export default function ResultsDashboard({ result }: ResultsDashboardProps) {
+export default function ResultsDashboard({ result, onIssueSelect, activeIssueId, embedded }: ResultsDashboardProps) {
   const getVerdictConfig = (verdict: AnalysisResult['verdict']) => {
     switch (verdict) {
       case 'safe-to-sign':
@@ -326,9 +356,8 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
     URL.revokeObjectURL(url);
   };
 
-  return (
-    <section id="results-section" className="py-20 px-6 bg-stone-950 border-t border-stone-900">
-      <div className="max-w-5xl mx-auto">
+  const content = (
+    <>
         {/* Header with Title and Export Buttons */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-12">
           <h2 className="text-3xl sm:text-4xl font-serif font-bold text-bronze-50">Analysis Results</h2>
@@ -389,8 +418,13 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
               Critical Issues ({result.criticalIssues.length})
             </h3>
             <div className="space-y-4">
-              {result.criticalIssues.slice(0, 3).map((issue) => (
-                <IssueCard key={issue.id} issue={issue} />
+              {result.criticalIssues.map((issue) => (
+                <IssueCard
+                  key={issue.id}
+                  issue={issue}
+                  onSelect={onIssueSelect}
+                  isActive={activeIssueId === issue.id}
+                />
               ))}
             </div>
           </div>
@@ -417,16 +451,15 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
                   const riskOrder = { negotiate: 1, standard: 2, blocker: 0 };
                   return riskOrder[a.risk] - riskOrder[b.risk];
                 })
-                .slice(0, 10)
                 .map((issue) => (
-                  <IssueCard key={issue.id} issue={issue} />
+                  <IssueCard
+                    key={issue.id}
+                    issue={issue}
+                    onSelect={onIssueSelect}
+                    isActive={activeIssueId === issue.id}
+                  />
                 ))}
             </div>
-            {result.issues.length > 10 && (
-              <p className="text-center text-bronze-200/60 text-sm mt-4">
-                Showing top 10 of {result.issues.length} issues
-              </p>
-            )}
           </div>
         )}
 
@@ -530,7 +563,16 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
             omissions may be present. Always consult qualified legal counsel before executing fund documents.
           </p>
         </div>
-      </div>
+    </>
+  );
+
+  if (embedded) {
+    return <div className="px-6 py-8">{content}</div>;
+  }
+
+  return (
+    <section id="results-section" className="py-20 px-6 bg-stone-950 border-t border-stone-900">
+      <div className="max-w-5xl mx-auto">{content}</div>
     </section>
   );
 }

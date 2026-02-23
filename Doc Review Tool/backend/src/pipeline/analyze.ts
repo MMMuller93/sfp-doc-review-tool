@@ -2,6 +2,7 @@ import { callLLM, parseJSONResponse, MODELS } from '../services/llm';
 import { buildModulePrompt, getMandatoryChecklist } from '../modules/registry';
 import type {
   UserRole,
+  DetailLevel,
   DocumentType,
   PreflightResult,
   DocumentStructure,
@@ -21,6 +22,7 @@ interface AnalyzeParams {
   documentText: string;
   documentName: string;
   userRole: UserRole;
+  detailLevel: DetailLevel;
   classification: PreflightResult;
   documentStructure?: DocumentStructure;
   referenceDocumentText?: string;
@@ -36,9 +38,16 @@ interface AnalyzeParams {
 export async function analyzeDocument(
   params: AnalyzeParams,
 ): Promise<{ result: RawAnalysisResult; response: LLMResponse }> {
-  const systemPrompt = buildAnalysisSystemPrompt(params.userRole, params.classification.documentType);
+  const systemPrompt = buildAnalysisSystemPrompt(params.userRole, params.classification.documentType, params.detailLevel);
 
   const userMessage = buildAnalysisUserMessage(params);
+
+  // Executive tier: reduced maxTokens creates structural pressure for concise output
+  const maxTokensByTier: Record<DetailLevel, number> = {
+    executive: 4096,
+    standard: 16384,
+    diligence: 16384,
+  };
 
   const response = await callLLM({
     provider: 'anthropic',
@@ -46,7 +55,7 @@ export async function analyzeDocument(
     systemPrompt,
     userMessage,
     temperature: 0.2,
-    maxTokens: 16384,
+    maxTokens: maxTokensByTier[params.detailLevel],
     responseFormat: 'json_object',
     cacheSystemPrompt: true,
   });
@@ -134,7 +143,7 @@ ${params.documentText.substring(0, 80_000)}
   const response = await callLLM({
     provider: 'anthropic',
     model: MODELS.OPUS,
-    systemPrompt: buildAnalysisSystemPrompt(params.userRole, params.classification.documentType),
+    systemPrompt: buildAnalysisSystemPrompt(params.userRole, params.classification.documentType, params.detailLevel),
     userMessage: followUpPrompt,
     temperature: 0.2,
     maxTokens: 16384,
@@ -323,7 +332,28 @@ function severityOrder(status: RegulatoryFlag['status']): number {
   }
 }
 
-function buildAnalysisSystemPrompt(userRole: UserRole, documentType: DocumentType): string {
+function buildAnalysisSystemPrompt(userRole: UserRole, documentType: DocumentType, detailLevel: DetailLevel = 'standard'): string {
+  const roleLabel = userRole === 'gp' ? 'GP (General Partner / Fund Manager)' : 'LP (Limited Partner / Investor)';
+
+  // Tier-specific analysis instructions
+  const tierInstructions: Record<DetailLevel, string> = {
+    executive: `2. **Showstoppers Only**: Surface ONLY provisions that are genuinely unusual, dangerous, or missing. If the document is largely market-standard, say so and flag 1-3 items at most. Do NOT nitpick. Stop your analysis once you have identified 3 genuine showstoppers. Do not continue scanning for additional issues.`,
+    standard: `2. **Precision Over Comprehensiveness**: Surface the issues that create real risk or negotiation leverage. Focus on the provisions that matter most.`,
+    diligence: `2. **Comprehensive Audit**: Perform a thorough legal audit. Assess every material provision against institutional standards. Include items that are market-standard but worth noting for completeness. Cover the full checklist.`,
+  };
+
+  // Tier-specific issue caps
+  const tierCaps: Record<DetailLevel, string> = {
+    executive: `- criticalIssues (risk: "blocker"): max 3
+- Total issues (all risk levels combined): max 3
+- Only flag genuinely unusual or dangerous provisions`,
+    standard: `- criticalIssues (risk: "blocker"): max 3
+- issues (risk: "negotiate" or "standard"): max 10 total`,
+    diligence: `- criticalIssues (risk: "blocker"): max 5
+- issues (risk: "negotiate" or "standard"): max 25 total
+- Include market-standard items with risk: "standard" for completeness`,
+  };
+
   return `# PRIVATE FUND DOCUMENT ANALYZER
 
 You are an elite legal analyst specializing in private fund documentation. You combine the expertise of a senior partner at a top fund formation practice with the precision of modern legal technology.
@@ -331,8 +361,8 @@ You are an elite legal analyst specializing in private fund documentation. You c
 ## CORE PRINCIPLES
 
 1. **Decision Tool, Not Memo**: Output is a decision dashboard. Users glance at issues and know what to push back on.
-2. **Precision Over Comprehensiveness**: Only flag issues that create real risk or negotiation leverage. Surface the 5-10 that matter.
-3. **Always Take a Side**: You are protecting the ${userRole === 'gp' ? 'GP (General Partner / Fund Manager)' : 'LP (Limited Partner / Investor)'}. Never hedge.
+${tierInstructions[detailLevel]}
+3. **Always Take a Side**: You are protecting the ${roleLabel}. Never hedge.
 4. **Anchor to Evidence**: Every assertion MUST trace to document text. If you cannot find supporting text, say "Not found in document." NEVER fabricate quotes or section numbers.
 
 ## SECURITY
@@ -393,8 +423,7 @@ You MUST return valid JSON with this structure:
 }
 
 RULES:
-- criticalIssues (risk: "blocker"): max 3
-- issues (risk: "negotiate" or "standard"): max 10 total
+${tierCaps[detailLevel]}
 - Every issue MUST have id, risk, topic, title, summary, impactAnalysis, targetRef, and fixes
 - targetRef MUST be an object with document, locator, and quote fields
 - fixes MUST have at least one entry with approach, description, and redline

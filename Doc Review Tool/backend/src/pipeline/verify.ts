@@ -1,5 +1,5 @@
 import { callLLM, parseJSONResponse, MODELS } from '../services/llm';
-import { verifyQuote } from '../utils/fuzzy-match';
+import { verifyQuoteWithOffsets } from '../utils/fuzzy-match';
 import type { Issue, QuoteVerificationStatus, LLMResponse } from '@shared/types';
 import type { RawAnalysisResult } from './analyze';
 
@@ -40,12 +40,16 @@ export async function verifyAnalysis(
 }> {
   const { rawResult, documentText } = params;
 
-  // Step 1: Algorithmic quote verification
+  // Step 1: Algorithmic quote verification with character offsets
   const issuesWithVerification = rawResult.issues.map((issue) => {
     const quote = issue.targetRef?.quote || '';
-    const verification = verifyQuote(quote, documentText);
+    const { verification, charStart, charEnd } = verifyQuoteWithOffsets(quote, documentText);
     return {
       ...issue,
+      targetRef: {
+        ...issue.targetRef,
+        highlightOffsets: charStart >= 0 ? { start: charStart, end: charEnd } : undefined,
+      },
       verificationStatus: verification.status,
       verificationScore: verification.score,
       verificationDetails: verification.matchDetails,
@@ -81,14 +85,15 @@ export async function verifyAnalysis(
         stats.hallucinated++;
         issue.verificationStatus = 'rejected';
       } else if (verdict.correctedQuote) {
-        // LLM found the actual quote — re-verify
-        const recheck = verifyQuote(verdict.correctedQuote, documentText);
+        // LLM found the actual quote — re-verify with offsets
+        const { verification: recheck, charStart, charEnd } = verifyQuoteWithOffsets(verdict.correctedQuote, documentText);
         issue.verificationStatus = recheck.status;
         if (recheck.status === 'verified') {
           issue.targetRef = {
             ...issue.targetRef,
             quote: verdict.correctedQuote,
             locator: verdict.correctedLocator || issue.targetRef.locator,
+            highlightOffsets: charStart >= 0 ? { start: charStart, end: charEnd } : undefined,
           };
           stats.review--;
           stats.verified++;

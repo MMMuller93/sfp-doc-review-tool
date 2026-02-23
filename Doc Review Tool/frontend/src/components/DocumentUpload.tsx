@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, X, Loader2 } from 'lucide-react';
-import type { UserRole, AnalysisResult } from '../types';
+import type { UserRole, DetailLevel, AnalysisResult } from '../types';
 import { API_BASE_URL } from '../config';
 
 interface UploadedFile {
@@ -25,6 +25,7 @@ export default function DocumentUpload({ onAnalysisComplete }: DocumentUploadPro
   const [targetDocument, setTargetDocument] = useState<UploadedFile | null>(null);
   const [referenceDocument, setReferenceDocument] = useState<UploadedFile | null>(null);
   const [userRole, setUserRole] = useState<UserRole | ''>('');
+  const [detailLevel, setDetailLevel] = useState<DetailLevel>('standard');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -118,6 +119,7 @@ export default function DocumentUpload({ onAnalysisComplete }: DocumentUploadPro
       if (userRole) {
         formData.append('userRole', userRole);
       }
+      formData.append('detailLevel', detailLevel);
 
       const response = await fetch(`${API_BASE_URL}/api/v2/upload/analyze`, {
         method: 'POST',
@@ -297,6 +299,57 @@ export default function DocumentUpload({ onAnalysisComplete }: DocumentUploadPro
                 </p>
               </div>
             </label>
+          </div>
+        </div>
+
+        {/* Analysis Depth */}
+        <div className="mb-8">
+          <label className="block text-lg font-semibold text-bronze-50 mb-3">
+            Analysis Depth
+          </label>
+
+          <div className="grid sm:grid-cols-3 gap-3">
+            {([
+              {
+                value: 'executive' as DetailLevel,
+                label: 'Executive Scan',
+                desc: 'Showstoppers only. Fast.',
+                time: '~15 sec',
+              },
+              {
+                value: 'standard' as DetailLevel,
+                label: 'Standard Review',
+                desc: 'Key risks & negotiation leverage.',
+                time: '~30 sec',
+              },
+              {
+                value: 'diligence' as DetailLevel,
+                label: 'Full Diligence',
+                desc: 'Comprehensive legal audit.',
+                time: '~45 sec',
+              },
+            ]).map((tier) => (
+              <label
+                key={tier.value}
+                className={`relative flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  detailLevel === tier.value
+                    ? 'border-bronze-500 bg-bronze-500/10'
+                    : 'border-stone-800 bg-stone-925 hover:border-bronze-500/50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="detailLevel"
+                  value={tier.value}
+                  checked={detailLevel === tier.value}
+                  onChange={(e) => setDetailLevel(e.target.value as DetailLevel)}
+                  className="sr-only"
+                />
+                <p className="text-bronze-50 font-semibold mb-1">{tier.label}</p>
+                <p className="text-bronze-200/70 text-xs mb-2">{tier.desc}</p>
+                <p className="text-bronze-500 text-xs font-medium">{tier.time}</p>
+              </label>
+            ))}
           </div>
         </div>
 

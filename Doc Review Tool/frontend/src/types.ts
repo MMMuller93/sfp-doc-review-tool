@@ -10,6 +10,8 @@ export type Confidence = 'high' | 'medium' | 'low';
 
 export type RiskLevel = 'blocker' | 'negotiate' | 'standard';
 
+export type DetailLevel = 'executive' | 'standard' | 'diligence';
+
 export type Verdict = 'safe-to-sign' | 'negotiate' | 'high-risk' | 'do-not-sign';
 
 export type IssueTopic =
@@ -66,6 +68,7 @@ export interface ClauseReference {
   document: 'target' | 'reference';
   locator: string;
   quote: string;
+  highlightOffsets?: { start: number; end: number };
 }
 
 export interface RedlineChange {
